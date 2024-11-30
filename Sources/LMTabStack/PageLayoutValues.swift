@@ -6,7 +6,7 @@ public protocol PageLayoutValueKey {
 }
 
 public struct PageLayoutValues: Equatable {
-    private var storage: [ObjectIdentifier: AnyEquatable] = [:]
+    private var storage: [ObjectIdentifier: AnySendableEquatable] = [:]
 
     subscript<K: PageLayoutValueKey>(type: K.Type) -> K.Value {
         get {

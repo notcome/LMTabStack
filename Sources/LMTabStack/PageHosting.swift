@@ -48,14 +48,25 @@ struct PageHostingView<Content: View>: View {
         let placement = state.placement(for: transitionProgress)
         let opacity = state.opacity(for: transitionProgress)
 
-        content
-            .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
-            .safeAreaPadding(placement.safeAreaInsets)
-            .modifier(store.transitionEffects ?? .init())
-            .absolutePlacement(frame: placement.frame, parentBounds: bounds)
-            .opacity(opacity)
-            .onPreferenceChange(TransitionElementSummary.self) { summary in
-                store.send(.syncTransitionElements(summary))
+        GeometryReader { proxy in
+            content
+                .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
+                .safeAreaPadding(placement.safeAreaInsets)
+                .modifier(store.transitionEffects ?? .init())
+                .zIndex(0)
+
+            ForEach(store.morphingViewContents) { content in
+                content.content
+                    .modifier(store.morphingViewEffects[content.id] ?? .init())
+                    .zIndex(content.zIndex ?? 0)
+
             }
+        }
+        .modifier(store.wrapperTransitionEffects ?? .init())
+        .absolutePlacement(frame: placement.frame, parentBounds: bounds)
+        .opacity(opacity)
+        .onPreferenceChange(TransitionElementSummary.self) { summary in
+            store.send(.syncTransitionElements(summary))
+        }
     }
 }

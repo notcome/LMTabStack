@@ -9,9 +9,9 @@ public protocol PageTransitionKey {
 @ObservableState
 public struct PageTransitionValues: Equatable, Sendable {
     @ObservationStateIgnored
-    var dict: [ObjectIdentifier: AnyEquatable] = [:]
+    var dict: [ObjectIdentifier: AnySendableEquatable] = [:]
 
-    private subscript(key: ObjectIdentifier) -> AnyEquatable? {
+    private subscript(key: ObjectIdentifier) -> AnySendableEquatable? {
         get {
             _$observationRegistrar.access(self, keyPath: \.[key])
             return dict[key]
@@ -32,7 +32,7 @@ public struct PageTransitionValues: Equatable, Sendable {
             if newValue == K.defaultValue {
                 self[ObjectIdentifier(type)] = nil
             } else {
-                self[ObjectIdentifier(type)] = AnyEquatable(base: newValue)
+                self[ObjectIdentifier(type)] = AnySendableEquatable(base: newValue)
             }
         }
     }

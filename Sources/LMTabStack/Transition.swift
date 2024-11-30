@@ -97,12 +97,12 @@ public protocol TransitionProvider {
     func transitions(
         for transitioningPages: IdentifiedArrayOf<PageProxy>,
         progress: TransitionProgress
-    ) -> AnyView
+    ) -> any TransitionDefinition
 }
 
 struct EmptyTransitionProvider: TransitionProvider {
-    func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> AnyView {
-        AnyView(EmptyView())
+    func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
+        EmptyTransitionDefinition()
     }
 }
 
@@ -113,11 +113,13 @@ extension EnvironmentValues {
 
 public struct PageProxy: Identifiable, Equatable {
     var state: PageHostingFeature.State
+    @EqualityIgnored
+    var globalProxy: GeometryProxy
 
-    init?(state: PageHostingFeature.State) {
+    init?(state: PageHostingFeature.State, globalProxy: GeometryProxy) {
         guard state.transitionBehavior != nil else { return nil }
         self.state = state
-
+        self.globalProxy = globalProxy
     }
 
     public var id: AnyPageID {
@@ -132,10 +134,25 @@ public struct PageProxy: Identifiable, Equatable {
         ViewRefView(ref: .content(id))
     }
 
+    public var wrapperView: some View {
+        ViewRefView(ref: .wrapper(id))
+    }
+
     public func transitionElement(_ id: some Hashable & Sendable) -> TransitionElementProxy? {
         let id = AnyTransitionElementID(id)
         guard let value = state.transitionElements[id: id] else { return nil }
         return .init(id: .init(pageID: self.id, elementID: id), anchor: value.anchor)
+    }
+
+    public var frame: CGRect {
+        state.placement.frame
+    }
+
+    public subscript(proxy: TransitionElementProxy) -> CGRect {
+        var rect = globalProxy[proxy.anchor]
+        rect.origin.x += frame.origin.x
+        rect.origin.y += frame.origin.y
+        return rect
     }
 }
 
@@ -146,7 +163,7 @@ public struct TransitionElementProxy: Identifiable {
     }
 
     public var id: ID
-    public var anchor: Anchor<CGRect>
+    var anchor: Anchor<CGRect>
 }
 
 extension TransitionElementProxy: View {
@@ -157,13 +174,17 @@ extension TransitionElementProxy: View {
 
 enum ViewRef: Hashable {
     case content(AnyPageID)
+    case wrapper(AnyPageID)
     case transitionElement(TransitionElementProxy.ID)
+    case morphingView(MorphingViewProxy.ID)
 
     var pageID: AnyPageID {
         switch self {
-        case .content(let pageID):
+        case .content(let pageID), .wrapper(let pageID):
             pageID
         case .transitionElement(let id):
+            id.pageID
+        case .morphingView(let id):
             id.pageID
         }
     }
@@ -212,16 +233,18 @@ struct TransitionGenerator: View {
     private var store
 
     var body: some View {
-        let progress = store.transitionProgress
-        let pageProxies = store.loadedPages.compactMap { page in
-            PageProxy(state: page)
-        }
+        GeometryReader { proxy in
+            let progress = store.transitionProgress
+            let pageProxies = store.loadedPages.compactMap { page in
+                PageProxy(state: page, globalProxy: proxy)
+            }
 
-        if let progress {
-            _TransitionGeneratorEq(
-                progress: progress,
-                pageProxies: IdentifiedArrayOf(uniqueElements: pageProxies)
-            ).equatable()
+            if let progress {
+                _TransitionGeneratorEq(
+                    progress: progress,
+                    pageProxies: IdentifiedArrayOf(uniqueElements: pageProxies)
+                ).equatable()
+            }
         }
     }
 }
@@ -253,16 +276,28 @@ struct _TransitionGenerator: View {
     private var store
 
     var body: some View {
-        Group(sections: transitions) { sections in
+        let transitionDefinition = self.transitionDefinition
+        Group(sections: transitionDefinition.erasedMorphingViews) { sections in
+            let morphingViews = MorphingViewsProxy.from(sections)
+            let transitions = transitionDefinition.erasedTransitions(morphingViews: morphingViews)
+            Group(sections: transitions) { sections in
+                Color.clear
+                    .onChange(of: Pair(lhs: progress, rhs: pageProxies), initial: true) {
+                        update(sections: sections)
+                    }
+            }
+
             Color.clear
-                .onChange(of: Pair(lhs: progress, rhs: pageProxies), initial: true) {
-                    update(sections: sections)
+                .onChange(of: EqualityIgnored.dummy, initial: true) {
+                    for (pageID, list) in morphingViews.morphingViewsByPages {
+                        store.send(.loadedPages(.element(id: pageID, action: .syncMorphingViewContents(list))))
+                    }
                 }
         }
     }
 
-    var transitions: AnyView {
-        guard !pageProxies.isEmpty else { return AnyView(EmptyView()) }
+    var transitionDefinition: any TransitionDefinition {
+        guard !pageProxies.isEmpty else { return .empty }
         return provider.transitions(for: pageProxies, progress: progress)
     }
 
@@ -286,8 +321,12 @@ struct _TransitionGenerator: View {
                 switch ref {
                 case .content:
                     send(.syncTransitionEffects(effects))
+                case .wrapper:
+                    send(.syncWrapperTransitionEffects(effects))
                 case .transitionElement(let id):
                     send(.syncTransitionElementEffects(id.elementID, effects))
+                case .morphingView(let id):
+                    send(.syncMorphingViewEffects(id.morphingViewID, effects))
                 }
 
                 if !subview.containerValues.transitionValues.dict.isEmpty {

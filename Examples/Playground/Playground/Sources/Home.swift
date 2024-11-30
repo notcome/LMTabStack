@@ -48,9 +48,9 @@ struct HomeChildButton: View {
                     .foregroundStyle(.white)
             }
             .onTapGesture {
-                withAnimation {
+//                withAnimation {
                     handleAction()
-                }
+//                }
             }
     }
 
@@ -119,9 +119,9 @@ struct HomeView: View {
                     .frame(maxWidth: 240)
                     .onTapGesture {
                         if model.childPage != .childA {
-                            withAnimation {
+//                            withAnimation {
                                 model.childPage = .childA
-                            }
+//                            }
                         }
                     }
 
@@ -135,9 +135,9 @@ struct HomeView: View {
                     .frame(maxWidth: 240)
                     .onTapGesture {
                         if model.childPage != .childB {
-                            withAnimation {
+//                            withAnimation {
                                 model.childPage = .childB
-                            }
+//                            }
                         }
                     }
             }
@@ -160,12 +160,14 @@ struct HomeStack: View {
         TabStack(AppTab.home) {
             HomeView()
 
-            if let childPage = model.childPage {
-                switch childPage {
-                case .childA:
-                    HomeChildA()
-                case .childB:
-                    HomeChildB()
+            Group {
+                if let childPage = model.childPage {
+                    switch childPage {
+                    case .childA:
+                        HomeChildA()
+                    case .childB:
+                        HomeChildB()
+                    }
                 }
             }
         }

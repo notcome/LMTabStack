@@ -54,10 +54,11 @@ struct TabStackFeature {
     private func reduceSelf(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .sync(.currentViewState(let cvs)):
-            switch cvs.animated {
-            case false:
+            let oldVisibleIDs = Set(state.loadedPages.filter { !$0.hidden }.ids)
+            let newVisibleIDs = Set(cvs.layout.pages.ids)
+            if oldVisibleIDs == newVisibleIDs || oldVisibleIDs.isEmpty {
                 state.update(to: cvs.layout)
-            case true:
+            } else {
                 state.animate(to: cvs.layout)
             }
 
@@ -159,6 +160,7 @@ extension TabStackFeature.State {
 
         for id in transitioningPages {
             loadedPages[id: id]!.transitionEffects = .init()
+            loadedPages[id: id]!.wrapperTransitionEffects = .init()
         }
 
         transitionProgress = .start

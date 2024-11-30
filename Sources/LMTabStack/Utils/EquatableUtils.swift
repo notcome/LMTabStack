@@ -19,7 +19,7 @@ private func areEqual<LHS: Equatable>(lhs: LHS, rhs: any Equatable) -> Bool {
     return lhs == rhs
 }
 
-struct AnyEquatable: Equatable, Sendable {
+struct AnySendableEquatable: Equatable, Sendable {
     var base: any Equatable & Sendable
 
     init(base: some Equatable & Sendable) {
@@ -34,4 +34,16 @@ struct AnyEquatable: Equatable, Sendable {
 func updateIfNeeded<T: Equatable>(_ destination: inout T, to newValue: T) {
     guard destination != newValue else { return }
     destination = newValue
+}
+
+struct AnySendableHashable: Hashable, Sendable {
+    var base: any Hashable & Sendable
+
+    static func ==(lhs: Self, rhs: Self) -> Bool {
+        AnyHashable(lhs.base) == AnyHashable(rhs.base)
+    }
+
+    func hash(into hasher: inout Hasher) {
+        AnyHashable(base).hash(into: &hasher)
+    }
 }

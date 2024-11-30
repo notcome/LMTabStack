@@ -31,93 +31,169 @@ struct ContentView: View {
     }
 }
 
+struct HomeToChild: TransitionDefinition {
+    var home: PageProxy
+    var child: PageProxy
+    var tabBar: PageProxy
 
-struct SimpleTransitionView: View {
-    var source: PageProxy
-    var target: PageProxy
-    var tabBar: PageProxy?
-    var progress: TransitionProgress
+    // logical start, i.e. root identity & child to appear
+    var atStart: Bool
 
-    var body: some View {
+    enum MorphingViewID: Hashable {
+        case cardBackground
+        case cardContent
+    }
+
+    var childID: HomeChildPage {
+        switch child.id.base as! HomePageID {
+        case .child(let childID):
+            return childID
+        default:
+            fatalError()
+        }
+    }
+
+    struct MorphingCardBackground: View {
+        var childID: HomeChildPage
+        var finalSize: CGSize
+        var initialAtStart: Bool
+
+        @PageTransition(\.atStart)
+        var atStart_
+
+        var atStart: Bool {
+            atStart_ ?? initialAtStart
+        }
+
+        var body: some View {
+            RoundedRectangle(cornerRadius: atStart ? 30 : 24)
+                .foregroundStyle(childID == .childA ? .yellow : .blue)
+                .frame(
+                    width: atStart ? 240 : finalSize.width,
+                    height: atStart ? 120 : finalSize.height)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(.spring(duration: 0.5), value: atStart)
+                .morphingViewContentZIndex(-1)
+        }
+
+    }
+
+    var morphingViews: some View {
+        MorphingViewGroup(for: child.id.base as! HomePageID) {
+            MorphingView(for: MorphingViewID.cardBackground) {
+                MorphingCardBackground(childID: childID, finalSize: child.frame.size, initialAtStart: atStart)
+            }
+        }
+    }
+
+    func transitions(morphingViews: MorphingViewsProxy) -> some View {
         // Opacity
-        Track(timing: .easeInOut(duration: 2)) {
-            source.contentView
-                .transitionOpacity(progress == .start ? 1 : 0)
-
-            target.contentView
-                .transitionOpacity(progress == .start ? 0 : 1)
+        Track(timing: .easeIn(duration: 1)) {
+            child.contentView
+                .transitionOpacity(atStart ? 0 : 1)
+                .transitionBlurRadius(atStart ? 10 : 0)
+                .pageTransition(\.atStart, atStart)
         }
 
-        // Morphing
-        Track(timing: .easeInOut(duration: 0.5)) {
-            source.contentView
-                .pageTransition(\.inTransition, true)
-//                .transitionOffset(y: progress == .start ? 0 : 1000)
+        // Movement
+        Track(timing: .spring(duration: 0.5)) {
+            tabBar.contentView
+                .transitionOffset(y: atStart ? 0 : 144)
 
-            target.contentView
-                .transitionScale(progress == .start ? 1e-3 : 1)
-                .pageTransition(\.inTransition, true)
-
-            if target.id == AnyPageID(HomePageID.child(.childB)) {
-                source.transitionElement(HomeChildPage.childA)?
-                    .transitionOffset(x: progress == .start ? 0 : -400)
-
-                source.transitionElement(HomeChildPage.childB)?
-                    .transitionBlurRadius(progress == .start ? 0 : 10)
-            }
-
-            if target.id == AnyPageID(HomePageID.child(.childA)) {
-                source.transitionElement(HomeChildPage.childA)?
-                    .transitionBlurRadius(progress == .start ? 0 : 10)
-
-                source.transitionElement(HomeChildPage.childB)?
-                    .transitionOffset(x: progress == .start ? 0 : 400)
-            }
-
-
-            if let tabBar {
-                let disappear = if case .disappear = tabBar.behaivor {
-                    true
-                } else {
-                    false
-                }
-
-                tabBar.contentView
-                    .transitionOffset(y: disappear == (progress == .start) ? 0 : 100)
+            if let childA = home.transitionElement(HomeChildPage.childA),
+               let childB = home.transitionElement(HomeChildPage.childB)
+            {
+                MorphingMovement(
+                    home: home,
+                    child: child,
+                    morphingViews: morphingViews,
+                    childA: childA,
+                    childB: childB,
+                    childID: childID,
+                    atStart: atStart
+                )
             }
         }
+    }
+
+    struct MorphingMovement: View {
+        var home: PageProxy
+        var child: PageProxy
+        var morphingViews: MorphingViewsProxy
+        var childA: TransitionElementProxy
+        var childB: TransitionElementProxy
+        var childID: HomeChildPage
+        var atStart: Bool
+
+        var childOpened: TransitionElementProxy {
+            childID == .childA ? childA : childB
+        }
+        var otherChild: TransitionElementProxy {
+            childID == .childA ? childB : childA
+        }
+
+        var wrapperOffset: CGPoint {
+            guard atStart else { return .zero }
+
+            let cardFrame = child[childOpened]
+            let sx = cardFrame.midX
+            let sy = cardFrame.midY
+            let ex = child.frame.midX
+            let ey = child.frame.midY
+            return .init(x: sx - ex, y: sy - ey)
+        }
+
+        var otherChildXOffset: CGFloat {
+            guard !atStart else { return 0 }
+            return childID == .childA ? 1000 : -1000
+        }
+
+
+        var body: some View {
+            // move frame card center to page center
+            child.wrapperView
+                .transitionOffset(wrapperOffset)
+
+            childOpened.transitionOpacity(0)
+            otherChild.transitionOffset(x: otherChildXOffset)
+        }
+
     }
 }
 
 struct SimpleTransitionProvider: TransitionProvider {
-    func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> AnyView {
-        let tabBarID = AnyPageID(AppTabBarPageID())
-        let tabBar = transitioningPages.first {
-            $0.id == tabBarID
-        }
+    func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
+        var tabBar: PageProxy?
+        var pages: [HomePageID: PageProxy] = [:]
 
-        let source = transitioningPages.first {
-            if $0.id != tabBarID, case .disappear = $0.behaivor {
-                true
-            } else {
-                false
+        for page in transitioningPages {
+            if page.id == AnyPageID(AppTabBarPageID()) {
+                tabBar = page
+                continue
+            }
+
+            if let id = page.id.base as? HomePageID {
+                pages[id] = page
             }
         }
 
-        let target = transitioningPages.first {
-            if $0.id != tabBarID, case .appear = $0.behaivor {
+        guard pages.count == 2 else { return .empty }
+        if let root = pages[.root] {
+            let child = (pages[.child(.childA)] ?? pages[.child(.childB)])!
+
+            let atStart = switch (root.behaivor, progress) {
+            case (.disappear, .start), (.appear, .end):
                 true
-            } else {
+            default:
                 false
             }
+
+            return HomeToChild(home: root, child: child, tabBar: tabBar!, atStart: atStart)
         }
 
-        guard let source, let target else { return AnyView(EmptyView()) }
-
-        return AnyView(SimpleTransitionView(source: source, target: target, tabBar: tabBar, progress: progress))
+        return .empty
     }
 }
-
 
 struct FullScreenTabStackLayout: TabStackLayout {
     var model: AppModel
@@ -149,13 +225,17 @@ struct FullScreenTabStackLayout: TabStackLayout {
 
 
 extension PageTransitionValues {
-    private enum InTransitionKey: PageTransitionKey {
-        static var defaultValue: Bool { false }
+    private enum AtStartKey: PageTransitionKey {
+        static var defaultValue: Bool? { nil }
+    }
+
+    var atStart: Bool? {
+        get { self[AtStartKey.self] }
+        set { self[AtStartKey.self] = newValue }
     }
 
     var inTransition: Bool {
-        get { self[InTransitionKey.self] }
-        set { self[InTransitionKey.self] = newValue }
+        atStart != nil
     }
 }
 
