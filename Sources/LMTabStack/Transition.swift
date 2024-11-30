@@ -287,8 +287,13 @@ struct _TransitionGenerator: View {
                     }
             }
 
+            let morphingViewIDs: Set<AnyMorphingViewID> = morphingViews
+                .morphingViewsByPages
+                .values
+                .reduce(into: []) { $0.formUnion($1.ids) }
+
             Color.clear
-                .onChange(of: EqualityIgnored.dummy, initial: true) {
+                .onChange(of: morphingViewIDs, initial: true) {
                     for (pageID, list) in morphingViews.morphingViewsByPages {
                         store.send(.loadedPages(.element(id: pageID, action: .syncMorphingViewContents(list))))
                     }

@@ -110,8 +110,7 @@ public struct MorphingViewsProxy {
         return proxy
     }
 
-    public func morphingView(pageID: some Hashable & Sendable, morphingViewID: some Hashable & Sendable) -> MorphingViewProxy? {
-        let pageID = AnyPageID(pageID)
+    public func morphingView(pageID: AnyPageID, morphingViewID: some Hashable & Sendable) -> MorphingViewProxy? {
         let morphingViewID = AnyMorphingViewID(morphingViewID)
         guard let views = morphingViewsByPages[pageID],
               views[id: morphingViewID] != nil

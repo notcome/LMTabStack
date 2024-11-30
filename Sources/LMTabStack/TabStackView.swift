@@ -15,10 +15,13 @@ private struct PlacementView: View {
         GeometryReader { proxy in
             ForEach(store.loadedPages) { loadedPage in
                 let id = loadedPage.id
+                let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
 
-                if let pageContent = pages[id: id] ?? store.pageContents[id: id] {
-                    pageContent.subview
-                        .zIndex(store.loadedPages[id: id]?.placement.zIndex ?? 0)
+                if let pageContent = pages[id: id] ?? store.pageContents[id: id],
+                   let childStore
+                {
+                    PageHostingView(store: childStore, content: pageContent.content)
+                        .zIndex(childStore.placement.zIndex)
                 }
             }
         }
@@ -56,7 +59,7 @@ public struct TabStackView<Tab: Hashable & Sendable, Content: View>: View {
 
                     TransitionGenerator()
                 }
-                .onChange(of: EqualityIgnored.dummy, initial: true) {
+                .onChange(of: Set(pages.ids), initial: true) {
                     store.send(.sync(.pageContents(pages)))
                 }
         }

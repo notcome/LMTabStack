@@ -8,9 +8,9 @@ struct EqualityIgnored<Value>: Equatable {
     }
 }
 
-extension EqualityIgnored where Value == Bool {
-    static var dummy: EqualityIgnored<Void> {
-        .init(wrappedValue: ())
+struct Unequal: Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        false
     }
 }
 

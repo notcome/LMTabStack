@@ -36,8 +36,8 @@ struct HomeToChild: TransitionDefinition {
     var child: PageProxy
     var tabBar: PageProxy
 
-    // logical start, i.e. root identity & child to appear
-    var atStart: Bool
+    var rootToChild: Bool
+    var progress: TransitionProgress
 
     enum MorphingViewID: Hashable {
         case cardBackground
@@ -56,13 +56,13 @@ struct HomeToChild: TransitionDefinition {
     struct MorphingCardBackground: View {
         var childID: HomeChildPage
         var finalSize: CGSize
-        var initialAtStart: Bool
+        var rootToChild: Bool
 
         @PageTransition(\.atStart)
         var atStart_
 
         var atStart: Bool {
-            atStart_ ?? initialAtStart
+            atStart_ ?? rootToChild
         }
 
         var body: some View {
@@ -75,30 +75,45 @@ struct HomeToChild: TransitionDefinition {
                 .animation(.spring(duration: 0.5), value: atStart)
                 .morphingViewContentZIndex(-1)
         }
-
     }
 
     var morphingViews: some View {
         MorphingViewGroup(for: child.id.base as! HomePageID) {
             MorphingView(for: MorphingViewID.cardBackground) {
-                MorphingCardBackground(childID: childID, finalSize: child.frame.size, initialAtStart: atStart)
+                MorphingCardBackground(childID: childID, finalSize: child.frame.size, rootToChild: rootToChild)
+            }
+
+            MorphingView(for: MorphingViewID.cardContent) {
+                Text(childID.title)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
 
     func transitions(morphingViews: MorphingViewsProxy) -> some View {
+        let atStart = rootToChild == (progress == .start)
+
         // Opacity
         Track(timing: .easeIn(duration: 1)) {
             child.contentView
                 .transitionOpacity(atStart ? 0 : 1)
                 .transitionBlurRadius(atStart ? 10 : 0)
                 .pageTransition(\.atStart, atStart)
+
+            if let content = morphingViews.morphingView(pageID: child.id, morphingViewID: MorphingViewID.cardContent) {
+                content
+                    .transitionOpacity(atStart ? 1 : 0)
+                    .transitionBlurRadius(atStart ? 0 : 10)
+            }
         }
 
         // Movement
         Track(timing: .spring(duration: 0.5)) {
             tabBar.contentView
                 .transitionOffset(y: atStart ? 0 : 144)
+
+            child.contentView
+                .transitionScale(atStart ? 1e-3 : 1)
 
             if let childA = home.transitionElement(HomeChildPage.childA),
                let childB = home.transitionElement(HomeChildPage.childB)
@@ -181,14 +196,18 @@ struct SimpleTransitionProvider: TransitionProvider {
         if let root = pages[.root] {
             let child = (pages[.child(.childA)] ?? pages[.child(.childB)])!
 
-            let atStart = switch (root.behaivor, progress) {
-            case (.disappear, .start), (.appear, .end):
+            let rootToChild = if case .disappear = root.behaivor {
                 true
-            default:
+            } else {
                 false
             }
 
-            return HomeToChild(home: root, child: child, tabBar: tabBar!, atStart: atStart)
+            return HomeToChild(
+                home: root,
+                child: child,
+                tabBar: tabBar!,
+                rootToChild: rootToChild,
+                progress: progress)
         }
 
         return .empty

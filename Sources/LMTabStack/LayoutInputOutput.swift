@@ -18,7 +18,7 @@ struct LayoutInput: Equatable {
         var layoutValues: PageLayoutValues
 
         static func from(_ page: ViewContent.Page) -> Self {
-            .init(id: page.id, layoutValues: page.subview.containerValues.pageLayoutValues)
+            .init(id: page.id, layoutValues: page.layoutValues)
         }
     }
 

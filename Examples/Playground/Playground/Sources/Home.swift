@@ -6,9 +6,27 @@ enum HomePageID: Hashable {
     case child(HomeChildPage)
 }
 
-enum HomeChildPage: Hashable {
+enum HomeChildPage: Hashable, CaseIterable {
     case childA
     case childB
+
+    var color: Color {
+        switch self {
+        case .childA:
+            .yellow
+        case .childB:
+            .blue
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .childA:
+            "Home Child A"
+        case .childB:
+            "Home Child B"
+        }
+    }
 }
 
 @Observable
@@ -66,85 +84,52 @@ struct HomeChildButton: View {
     }
 }
 
-struct HomeChildA: View {
-    var body: some View {
-        Page(id: HomePageID.child(.childA)) {
-            Text("Home Child A")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .pageBackground(Color.yellow)
-                .overlay(alignment: .topLeading) {
-                    HomeChildButton(action: .close)
-                        .padding(36)
-                }
-                .overlay(alignment: .topTrailing) {
-                    HomeChildButton(action: .toB)
-                        .padding(36)
-                }
-        }
-    }
-}
+struct HomeChildView: View {
+    var page: HomeChildPage
+    var model: HomeModel
 
-struct HomeChildB: View {
     var body: some View {
-        Page(id: HomePageID.child(.childB)) {
-            Text("Home Child B")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .pageBackground(Color.blue)
-                .overlay(alignment: .topLeading) {
-                    HomeChildButton(action: .close)
-                        .padding(36)
-                }
-                .overlay(alignment: .topTrailing) {
-                    HomeChildButton(action: .toA)
-                        .padding(36)
-                }
-        }
+        Text(page.title)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .pageBackground(page.color)
+            .overlay(alignment: .topLeading) {
+                HomeChildButton(action: .close)
+                    .padding(36)
+            }
+            .overlay(alignment: .topTrailing) {
+                HomeChildButton(action: page == .childA ? .toB : .toA)
+                    .padding(36)
+            }
+            .environment(model)
     }
+
+
 }
 
 struct HomeView: View {
-    @Environment(HomeModel.self)
-    private var model
+    var model: HomeModel
 
     var body: some View {
-        Page(id: HomePageID.root) {
-            HStack(spacing: 10) {
+        HStack(spacing: 10) {
+            ForEach(HomeChildPage.allCases, id: \.self) { page in
                 RoundedRectangle(cornerRadius: 30)
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(page.color)
                     .overlay {
-                        Text("Home Child A")
+                        Text(page.title)
                     }
-                    .transitionElement(id: HomeChildPage.childA)
+                    .transitionElement(id: page)
                     .frame(height: 120)
                     .frame(maxWidth: 240)
                     .onTapGesture {
-                        if model.childPage != .childA {
-//                            withAnimation {
-                                model.childPage = .childA
-//                            }
-                        }
-                    }
-
-                RoundedRectangle(cornerRadius: 30)
-                    .foregroundStyle(.blue)
-                    .overlay {
-                        Text("Home Child B")
-                    }
-                    .transitionElement(id: HomeChildPage.childB)
-                    .frame(height: 120)
-                    .frame(maxWidth: 240)
-                    .onTapGesture {
-                        if model.childPage != .childB {
-//                            withAnimation {
-                                model.childPage = .childB
-//                            }
+                        if model.childPage != page {
+                            model.childPage = page
                         }
                     }
             }
-            .padding(.horizontal, 30)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
         }
+        .padding(.horizontal, 30)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
     }
 }
 
@@ -158,16 +143,13 @@ struct HomeStack: View {
 
     var body: some View {
         TabStack(AppTab.home) {
-            HomeView()
+            Page(id: HomePageID.root) {
+                HomeView(model: model)
+            }
 
-            Group {
-                if let childPage = model.childPage {
-                    switch childPage {
-                    case .childA:
-                        HomeChildA()
-                    case .childB:
-                        HomeChildB()
-                    }
+            if let childPage = model.childPage {
+                Page(id: HomePageID.child(childPage)) {
+                    HomeChildView(page: childPage, model: model)
                 }
             }
         }
