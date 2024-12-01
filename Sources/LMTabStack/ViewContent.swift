@@ -27,15 +27,13 @@ struct ViewContent {
 
         let tabs = content.compactMap { section -> Tab? in
             let pages = section.content.compactMap { subview -> Page? in
-                guard let id = subview.containerValues.tag(for: AnyPageID.self),
-                      let content = subview.containerValues.pageContent
-                else {
+                guard let id = subview.containerValues.tag(for: AnyPageID.self) else {
                     assertionFailure("Each page in a TabStackView should be wrapped by a Page.")
                     return nil
                 }
                 return .init(
                     id: id,
-                    content: content,
+                    content: AnyView(subview),
                     layoutValues: subview.containerValues.pageLayoutValues)
             }
 

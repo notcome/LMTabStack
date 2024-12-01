@@ -15,13 +15,10 @@ private struct PlacementView: View {
         GeometryReader { proxy in
             ForEach(store.loadedPages) { loadedPage in
                 let id = loadedPage.id
-                let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
 
-                if let pageContent = pages[id: id] ?? store.pageContents[id: id],
-                   let childStore
+                if let pageContent = pages[id: id] ?? store.pageContents[id: id]//,
                 {
-                    PageHostingView(store: childStore, content: pageContent.content)
-                        .zIndex(childStore.placement.zIndex)
+                    pageContent.content.zIndex(loadedPage.placement.zIndex)
                 }
             }
         }

@@ -67,14 +67,4 @@ struct AppTabBar: View {
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity)
     }
-//
-//    struct Layout: TabStackTabBarLayout {
-//        var model: AppModel
-//
-//        func placeTabBar(in context: TabStackLayoutContext, tabStack: LayoutTabStack) {
-//            guard model.showsTabBar else { return }
-//
-
-//        }
-//    }
 }

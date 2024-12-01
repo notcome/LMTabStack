@@ -54,13 +54,21 @@ struct TabStackFeature {
     private func reduceSelf(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .sync(.currentViewState(let cvs)):
-            let oldVisibleIDs = Set(state.loadedPages.filter { !$0.hidden }.ids)
-            let newVisibleIDs = Set(cvs.layout.pages.ids)
-            if oldVisibleIDs == newVisibleIDs || oldVisibleIDs.isEmpty {
+            guard cvs.animated else {
                 state.update(to: cvs.layout)
-            } else {
-                state.animate(to: cvs.layout)
+                break
             }
+            let oldVisibleIDs = Set(state.loadedPages.filter { !$0.hidden }.ids)
+            guard !oldVisibleIDs.isEmpty else {
+                state.update(to: cvs.layout)
+                break
+            }
+            let newVisibleIDs = Set(cvs.layout.pages.ids)
+            guard oldVisibleIDs != newVisibleIDs else {
+                state.update(to: cvs.layout)
+                break
+            }
+            state.animate(to: cvs.layout)
 
         case .sync(.pageContents(let pageContents)):
             state.pageContents = pageContents

@@ -66,9 +66,14 @@ struct HomeChildButton: View {
                     .foregroundStyle(.white)
             }
             .onTapGesture {
-//                withAnimation {
+                switch action {
+                case .close:
+                    withAnimation {
+                        handleAction()
+                    }
+                default:
                     handleAction()
-//                }
+                }
             }
     }
 
@@ -86,7 +91,8 @@ struct HomeChildButton: View {
 
 struct HomeChildView: View {
     var page: HomeChildPage
-    var model: HomeModel
+    @Environment(HomeModel.self)
+    private var model
 
     var body: some View {
         Text(page.title)
@@ -107,7 +113,8 @@ struct HomeChildView: View {
 }
 
 struct HomeView: View {
-    var model: HomeModel
+    @Environment(HomeModel.self)
+    private var model
 
     var body: some View {
         HStack(spacing: 10) {
@@ -121,8 +128,10 @@ struct HomeView: View {
                     .frame(height: 120)
                     .frame(maxWidth: 240)
                     .onTapGesture {
-                        if model.childPage != page {
-                            model.childPage = page
+                        withAnimation {
+                            if model.childPage != page {
+                                model.childPage = page
+                            }
                         }
                     }
             }
@@ -144,12 +153,12 @@ struct HomeStack: View {
     var body: some View {
         TabStack(AppTab.home) {
             Page(id: HomePageID.root) {
-                HomeView(model: model)
+                HomeView()
             }
 
             if let childPage = model.childPage {
                 Page(id: HomePageID.child(childPage)) {
-                    HomeChildView(page: childPage, model: model)
+                    HomeChildView(page: childPage)
                 }
             }
         }

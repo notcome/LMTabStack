@@ -11,6 +11,9 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
     var id: ID
     var content: Content
 
+    @Environment(TabStackStore.self)
+    private var store
+
     public init(
         id: ID,
         @ViewBuilder content: () -> Content
@@ -20,25 +23,21 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
     }
 
     public var body: some View {
-        Color.clear
-            .tag(AnyPageID(id))
-            .containerValue(\.pageContent, AnyView(content))
+        let id = AnyPageID(id)
+        GeometryReader { _ in
+            let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
+            if let childStore {
+                PageHostingView(
+                    store: childStore,
+                    content: AnyView(content),
+                    transitionProgress: store.transitionProgress
+                )
+                .environment(childStore)
+            }
+        }
+        .tag(id)
     }
 }
-
-//
-//Group {
-//    let id = AnyPageID(id)
-//    let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
-//    if let childStore {
-//        PageHostingView(
-//            store: childStore,
-//            content: content,
-//            transitionProgress: store.transitionProgress
-//        )
-//        .environment(childStore)
-//    }
-//}
 
 struct PageHostingView: View {
     var store: StoreOf<PageHostingFeature>
