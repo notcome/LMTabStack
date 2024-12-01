@@ -48,6 +48,8 @@ struct PageHostingFeature {
 
         @ObservationStateIgnored
         var transitionReportedStatus: TransitionReportedStatus = .initial
+        @ObservationStateIgnored
+        var transitionDuration: TimeInterval = 0
 
         var transitionValues: PageTransitionValues = .init()
 
@@ -55,7 +57,9 @@ struct PageHostingFeature {
             transitionBehavior = nil
             transitionEffects = nil
             wrapperTransitionEffects = nil
+
             transitionReportedStatus = .initial
+            transitionDuration = 0
 
             for id in transitionElements.ids {
                 transitionElements[id: id]?.transitionEffects = nil
@@ -99,7 +103,7 @@ struct PageHostingFeature {
         case syncMorphingViewEffects(AnyMorphingViewID, TransitionEffects)
 
         case transitionDidStart
-        case transitionDidEnd
+        case transitionDidEnd(TimeInterval)
     }
 
     func reduce(into state: inout State, action: Action) -> Effect<Action> {
@@ -141,9 +145,10 @@ struct PageHostingFeature {
             state.morphingViewEffects[id, default: .init()].merge(other: effects)
 
         case .transitionDidStart:
-            updateIfNeeded(&state.transitionReportedStatus, to: .didStart)
-        case .transitionDidEnd:
-            updateIfNeeded(&state.transitionReportedStatus, to: .didEnd)
+            state.transitionReportedStatus = .didStart
+        case .transitionDidEnd(let duration):
+            state.transitionReportedStatus = .didEnd
+            state.transitionDuration = max(state.transitionDuration, duration)
         }
         return .none
     }

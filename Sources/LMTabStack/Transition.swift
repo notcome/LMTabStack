@@ -195,7 +195,7 @@ extension ContainerValues {
     var viewRef: ViewRef? = nil
 
     @Entry
-    var pageTransitionTiming: Animation? = nil
+    var pageTransitionTiming: TransitionAnimation? = nil
 }
 
 struct ViewRefView {
@@ -210,12 +210,12 @@ extension ViewRefView: View {
 }
 
 public struct Track<Content: View>: View {
-    public var timing: Animation
+    public var timing: TransitionAnimation
 
     @ViewBuilder
     public var content: Content
 
-    public init(timing: Animation, @ViewBuilder content: () -> Content) {
+    public init(timing: TransitionAnimation, @ViewBuilder content: () -> Content) {
         self.timing = timing
         self.content = content()
     }
@@ -311,9 +311,14 @@ struct _TransitionGenerator: View {
             store.send(.loadedPages(.element(id: id, action: action)), animation: animation)
         }
 
+        var animationDuration: TimeInterval = 0
+
         for section in sections {
             guard let timing = section.containerValues.pageTransitionTiming else { continue }
-            let animation: Animation? = progress == .end ? timing : nil
+            let transitionAnimation: TransitionAnimation? = progress == .end ? timing : nil
+            animationDuration = max(animationDuration, transitionAnimation?.animation.duration ?? 0)
+
+            let animation = transitionAnimation?.createSwiftUIAnimation()
 
             for subview in section.content {
                 guard let ref = subview.containerValues.viewRef else { continue }
@@ -341,7 +346,7 @@ struct _TransitionGenerator: View {
         }
 
         for id in pageProxies.ids {
-            send(id: id, action: progress == .start ? .transitionDidStart : .transitionDidEnd)
+            send(id: id, action: progress == .start ? .transitionDidStart : .transitionDidEnd(animationDuration))
         }
     }
 }

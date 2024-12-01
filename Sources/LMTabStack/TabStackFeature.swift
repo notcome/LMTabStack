@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import Foundation
 
 public enum TransitionProgress: Equatable, Sendable {
     case start
@@ -191,10 +192,14 @@ extension TabStackFeature.State {
         let allDidEnd = transitioningPagesAllSatisfy {
             $0.transitionReportedStatus == .didEnd
         }
+        let duration: TimeInterval = loadedPages.reduce(0) {
+            max($0, $1.transitionDuration)
+        }
+
         guard allDidEnd else { return .none }
         return .run { send in
             do {
-                try await Task.sleep(for: .milliseconds(2000))
+                try await Task.sleep(for: .milliseconds(Int(ceil(duration * 1000))))
                 await send(.cleanUpTransition)
             } catch {
                 print(error)
@@ -217,5 +222,7 @@ extension TabStackFeature.State {
             }
         }
         assert(transitioningPages.isEmpty)
+
+        print("Transition did complete")
     }
 }
