@@ -35,26 +35,44 @@ struct HomeToChild: TransitionDefinition {
     var home: PageProxy
     var child: PageProxy
     var tabBar: PageProxy
-
     var rootToChild: Bool
     var progress: TransitionProgress
+
+    var childID: HomeChildPage
+    var childA: TransitionElementProxy
+    var childB: TransitionElementProxy
+
+
+    init?(home: PageProxy, child: PageProxy, tabBar: PageProxy, rootToChild: Bool, progress: TransitionProgress) {
+        guard let childA = home.transitionElement(HomeChildPage.childA),
+              let childB = home.transitionElement(HomeChildPage.childB)
+        else { return nil }
+
+        self.home = home
+        self.child = child
+        self.tabBar = tabBar
+        self.rootToChild = rootToChild
+        self.progress = progress
+
+        switch child.id.base as! HomePageID {
+        case .child(let childID):
+            self.childID =  childID
+        default:
+            fatalError()
+        }
+
+        self.childA = childA
+        self.childB = childB
+    }
 
     enum MorphingViewID: Hashable {
         case cardBackground
         case cardContent
     }
 
-    var childID: HomeChildPage {
-        switch child.id.base as! HomePageID {
-        case .child(let childID):
-            return childID
-        default:
-            fatalError()
-        }
-    }
-
     struct MorphingCardBackground: View {
         var childID: HomeChildPage
+        var cardSize: CGSize
         var finalSize: CGSize
         var rootToChild: Bool
 
@@ -69,8 +87,8 @@ struct HomeToChild: TransitionDefinition {
             RoundedRectangle(cornerRadius: atStart ? 30 : 24)
                 .foregroundStyle(childID == .childA ? .yellow : .blue)
                 .frame(
-                    width: atStart ? 240 : finalSize.width,
-                    height: atStart ? 120 : finalSize.height)
+                    width: atStart ? cardSize.width : finalSize.width,
+                    height: atStart ? cardSize.height : finalSize.height)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(.spring(duration: 0.5), value: atStart)
                 .morphingViewContentZIndex(-1)
@@ -80,7 +98,17 @@ struct HomeToChild: TransitionDefinition {
     var morphingViews: some View {
         MorphingViewGroup(for: child.id.base as! HomePageID) {
             MorphingView(for: MorphingViewID.cardBackground) {
-                MorphingCardBackground(childID: childID, finalSize: child.frame.size, rootToChild: rootToChild)
+                let cardOpened = switch childID {
+                case .childA:
+                    childA
+                case .childB:
+                    childB
+                }
+                MorphingCardBackground(
+                    childID: childID,
+                    cardSize: home[cardOpened].size,
+                    finalSize: child.frame.size,
+                    rootToChild: rootToChild)
             }
 
             MorphingView(for: MorphingViewID.cardContent) {
@@ -115,19 +143,15 @@ struct HomeToChild: TransitionDefinition {
             child.contentView
                 .transitionScale(atStart ? 1e-3 : 1)
 
-            if let childA = home.transitionElement(HomeChildPage.childA),
-               let childB = home.transitionElement(HomeChildPage.childB)
-            {
-                MorphingMovement(
-                    home: home,
-                    child: child,
-                    morphingViews: morphingViews,
-                    childA: childA,
-                    childB: childB,
-                    childID: childID,
-                    atStart: atStart
-                )
-            }
+            MorphingMovement(
+                home: home,
+                child: child,
+                morphingViews: morphingViews,
+                childA: childA,
+                childB: childB,
+                childID: childID,
+                atStart: atStart
+            )
         }
     }
 
@@ -202,12 +226,14 @@ struct SimpleTransitionProvider: TransitionProvider {
                 false
             }
 
-            return HomeToChild(
+            guard let transition = HomeToChild(
                 home: root,
                 child: child,
                 tabBar: tabBar!,
                 rootToChild: rootToChild,
                 progress: progress)
+            else { return .empty }
+            return transition
         }
 
         return .empty
