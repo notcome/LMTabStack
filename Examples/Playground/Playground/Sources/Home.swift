@@ -128,10 +128,11 @@ struct HomeView: View {
                     .frame(height: 120)
                     .frame(maxWidth: 240)
                     .onTapGesture {
-                        withAnimation {
-                            if model.childPage != page {
-                                model.childPage = page
-                            }
+                        guard model.childPage != page else { return}
+                        var transaction = Transaction(animation: .default)
+                        transaction.transitionProvider = SimpleTransitionProvider()
+                        withTransaction(transaction) {
+                            model.childPage = page
                         }
                     }
             }

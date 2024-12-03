@@ -26,7 +26,6 @@ struct ContentView: View {
         }
         .padding(24)
         .environment(model)
-        .environment(\.transitionProvider, SimpleTransitionProvider())
         .tabStackLayout(FullScreenTabStackLayout(model: model))
     }
 }
@@ -196,7 +195,6 @@ struct HomeToChild: TransitionDefinition {
             childOpened.transitionOpacity(0)
             otherChild.transitionOffset(x: otherChildXOffset)
         }
-
     }
 }
 

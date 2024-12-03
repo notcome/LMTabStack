@@ -26,7 +26,11 @@ private struct _TabStackLayoutView: View {
             Color.clear
                 .onChangeWithTransaction(of: layout) { layout, tx in
                     let animated = !tx.disablesAnimations && tx.animation != nil
-                    store.send(.sync(.currentViewState(.init(animated: animated, layout: layout))))
+                    let cvs = TabStackFeature.CurrentViewState(
+                        animated: animated,
+                        transitionProvider: tx.transitionProvider,
+                        layout: layout)
+                    store.send(.sync(.currentViewState(cvs)))
                 }
         }
     }

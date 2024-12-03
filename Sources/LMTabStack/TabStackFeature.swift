@@ -23,12 +23,34 @@ struct TabStackFeature {
         var loadedPages: IdentifiedArrayOf<PageHostingFeature.State> = []
 
         var transitionProgress: TransitionProgress?
+
+        @ObservationStateIgnored
+        @EqualityIgnored
+        private var _transitionProvider: any TransitionProvider = EmptyTransitionProvider()
+
+        var transitionProvider: any TransitionProvider {
+            get {
+                _$observationRegistrar.access(self, keyPath: \.transitionProvider)
+                return _transitionProvider
+            }
+            set {
+                _$observationRegistrar.mutate(
+                    self,
+                    keyPath: \.transitionProvider,
+                    &_transitionProvider,
+                    newValue,
+                    { _, _ in false }
+                )
+            }
+        }
+
         @ObservationStateIgnored
         var transitionReportedStatus: TransitionReportedStatus = .initial
     }
 
     struct CurrentViewState {
         var animated: Bool
+        var transitionProvider: any TransitionProvider
         var layout: LayoutOutput
     }
 
@@ -69,6 +91,7 @@ struct TabStackFeature {
                 state.update(to: cvs.layout)
                 break
             }
+            state.transitionProvider = cvs.transitionProvider
             state.animate(to: cvs.layout)
 
         case .sync(.pageContents(let pageContents)):
@@ -85,6 +108,7 @@ struct TabStackFeature {
 
         case .cleanUpTransition:
             state.cleanUpTransition()
+            state.transitionProvider = EmptyTransitionProvider()
 
         default:
             break

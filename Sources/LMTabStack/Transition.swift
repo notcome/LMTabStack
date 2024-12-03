@@ -106,7 +106,7 @@ struct EmptyTransitionProvider: TransitionProvider {
     }
 }
 
-extension EnvironmentValues {
+extension Transaction {
     @Entry
     public var transitionProvider: any TransitionProvider = EmptyTransitionProvider()
 }
@@ -269,9 +269,6 @@ struct _TransitionGenerator: View {
     var progress: TransitionProgress
     var pageProxies: IdentifiedArrayOf<PageProxy>
 
-    @Environment(\.transitionProvider)
-    private var provider
-
     @Environment(TabStackStore.self)
     private var store
 
@@ -303,7 +300,7 @@ struct _TransitionGenerator: View {
 
     var transitionDefinition: any TransitionDefinition {
         guard !pageProxies.isEmpty else { return .empty }
-        return provider.transitions(for: pageProxies, progress: progress)
+        return store.transitionProvider.transitions(for: pageProxies, progress: progress)
     }
 
     func update(sections: SectionCollection) {
