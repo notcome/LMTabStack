@@ -93,6 +93,7 @@ public extension View {
     }
 }
 
+@MainActor
 public protocol TransitionProvider {
     func transitions(
         for transitioningPages: IdentifiedArrayOf<PageProxy>,
@@ -106,9 +107,20 @@ struct EmptyTransitionProvider: TransitionProvider {
     }
 }
 
+enum InteractiveTransitionProgress: Equatable {
+    case start
+    case end
+}
+
 extension Transaction {
     @Entry
     public var transitionProvider: (any TransitionProvider)? = nil
+    @Entry
+    var interactiveTransitionProgress: InteractiveTransitionProgress?
+
+    public var isInteractiveTransition: Bool {
+        interactiveTransitionProgress != nil
+    }
 }
 
 public func withTransitionProvider(_ provider: any TransitionProvider, action: () -> Void) {
@@ -256,7 +268,10 @@ struct TransitionGenerator: View {
                             pageProxies.append(pageProxy)
                         }
                     }
-                    return .init(progress: progress, pageProxies: pageProxies)
+                    return .init(
+                        token: store.transitionUpdateToken,
+                        progress: progress,
+                        pageProxies: pageProxies)
                 }, content: { scopedStore in
                     if let view = scopedStore.state {
                         view.equatable()
@@ -267,13 +282,14 @@ struct TransitionGenerator: View {
 }
 
 struct _TransitionGeneratorEq: Equatable {
+    var token: Int
     var progress: TransitionProgress
     var pageProxies: IdentifiedArrayOf<PageProxy>
 }
 
 extension _TransitionGeneratorEq: View {
     var body: some View {
-        _TransitionGenerator(progress: progress, pageProxies: pageProxies)
+        _TransitionGenerator(token: token, progress: progress, pageProxies: pageProxies)
     }
 }
 
@@ -283,6 +299,7 @@ struct Pair<LHS: Equatable, RHS: Equatable>: Equatable {
 }
 
 struct _TransitionGenerator: View {
+    var token: Int
     var progress: TransitionProgress
     var pageProxies: IdentifiedArrayOf<PageProxy>
 
@@ -295,8 +312,9 @@ struct _TransitionGenerator: View {
             let morphingViews = MorphingViewsProxy.from(sections)
             let transitions = transitionDefinition.erasedTransitions(morphingViews: morphingViews)
             Group(sections: transitions) { sections in
+                let deps = Pair(lhs: token, rhs: Pair(lhs: progress, rhs: pageProxies))
                 Color.clear
-                    .onChange(of: Pair(lhs: progress, rhs: pageProxies), initial: true) {
+                    .onChange(of: deps, initial: true) {
                         update(sections: sections)
                     }
             }
@@ -344,7 +362,6 @@ struct _TransitionGenerator: View {
 
                 switch ref {
                 case .content:
-                    print("sync content", effects, ref.pageID.base)
                     send(.syncTransitionEffects(effects))
                 case .wrapper:
                     send(.syncWrapperTransitionEffects(effects))
@@ -361,7 +378,6 @@ struct _TransitionGenerator: View {
         }
 
         for id in pageProxies.ids {
-            print("sync transition did", progress == .start ? "start" : "end", id.base)
             send(id: id, action: progress == .start ? .transitionDidStart : .transitionDidEnd(animationDuration))
         }
     }

@@ -26,6 +26,7 @@ private struct _TabStackLayoutView: View {
             Color.clear
                 .onChangeWithTransaction(of: layout) { layout, tx in
                     let cvs = TabStackFeature.CurrentViewState(
+                        interactiveTransitionProgress: tx.interactiveTransitionProgress,
                         transitionProvider: tx.transitionProvider,
                         layout: layout)
                     store.send(.sync(.currentViewState(cvs)))

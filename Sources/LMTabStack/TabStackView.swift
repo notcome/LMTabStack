@@ -16,7 +16,6 @@ private struct PlacementView: View {
             let _ = print(store.loadedPages.map(\.id.base))
 
             ForEach(store.loadedPages) { loadedPage in
-                let _ = print("actually render", loadedPage.id.base)
                 let id = loadedPage.id
 
                 if let pageContent = pages[id: id] ?? store.pageContents[id: id] {

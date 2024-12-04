@@ -16,12 +16,24 @@ struct SideBySide: TransitionDefinition {
     var morphingViews: some View {
         MorphingViewGroup(for: childA.id) {
             MorphingView(for: MorphingViewID.background) {
-                HomeChildPage.childA.color
+                GeometryReader { proxy in
+                    HomeChildPage.childA.color
+                        .frame(width: proxy.size.width * 2)
+                        .frame(width: proxy.size.width, alignment: .trailing)
+                }
+                .ignoresSafeArea()
+                .morphingViewContentZIndex(-1)
             }
         }
         MorphingViewGroup(for: childB.id) {
             MorphingView(for: MorphingViewID.background) {
-                HomeChildPage.childB.color
+                GeometryReader { proxy in
+                    HomeChildPage.childB.color
+                        .frame(width: proxy.size.width * 2)
+                        .frame(width: proxy.size.width, alignment: .leading)
+                }
+                .ignoresSafeArea()
+                .morphingViewContentZIndex(-1)
             }
         }
     }
@@ -75,22 +87,14 @@ struct SideBySide: TransitionDefinition {
         } else {
             lerp(from: 0, to: width, t: offset)
         }
-
     }
 
     func transitions(morphingViews: MorphingViewsProxy) -> some View {
         Track(timing: .spring) {
-            childA.contentView
+            childA.wrapperView
                 .transitionOffset(x: childAOffset)
-
-            morphingViews.morphingView(pageID: childA.id, morphingViewID: MorphingViewID.background)!
-                .transitionOffset(x: childAOffset - width)
-
-            childB.contentView
+            childB.wrapperView
                 .transitionOffset(x: childBOffset)
-
-            morphingViews.morphingView(pageID: childB.id, morphingViewID: MorphingViewID.background)!
-                .transitionOffset(x: childBOffset + width)
         }
     }
 }

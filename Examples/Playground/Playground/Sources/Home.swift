@@ -108,6 +108,7 @@ struct HomeChildView: View {
                 HomeChildButton(action: page == .childA ? .toB : .toA)
                     .padding(36)
             }
+            .withHomeChildSwitchingGesture(current: page)
     }
 }
 

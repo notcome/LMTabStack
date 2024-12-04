@@ -28,6 +28,8 @@ struct TabStackFeature {
         @EqualityIgnored
         private var _transitionProvider: any TransitionProvider = EmptyTransitionProvider()
 
+        var interactiveTransitionProgress: InteractiveTransitionProgress?
+        var transitionUpdateToken: Int = 0
         var transitionProvider: any TransitionProvider {
             get {
                 _$observationRegistrar.access(self, keyPath: \.transitionProvider)
@@ -49,6 +51,7 @@ struct TabStackFeature {
     }
 
     struct CurrentViewState {
+        var interactiveTransitionProgress: InteractiveTransitionProgress?
         var transitionProvider: (any TransitionProvider)?
         var layout: LayoutOutput
     }
@@ -64,6 +67,9 @@ struct TabStackFeature {
 
         case moveTransitionProgressToEnd
         case cleanUpTransition
+
+        case refreshTransition
+        case completeInteractiveTransition
     }
 
     var body: some Reducer<State, Action> {
@@ -90,6 +96,8 @@ struct TabStackFeature {
                 state.update(to: cvs.layout)
                 break
             }
+
+            state.interactiveTransitionProgress = cvs.interactiveTransitionProgress
             state.transitionProvider = provider
             state.animate(to: cvs.layout)
 
@@ -110,6 +118,11 @@ struct TabStackFeature {
         case .cleanUpTransition:
             state.cleanUpTransition()
             state.transitionProvider = EmptyTransitionProvider()
+
+        case .refreshTransition:
+            state.transitionUpdateToken += 1
+        case .completeInteractiveTransition:
+            state.transitionProgress = .end
 
         default:
             break
@@ -167,7 +180,11 @@ extension TabStackFeature.State {
         for oldState in loadedPages {
             let id = oldState.id
             if let newState = layout.pages[id: id] {
-                if oldState.hidden {
+                if case .disappear = oldState.transitionBehavior {
+                    // The semantics of running this function twice for interactive transition cancellation is unclear.
+                    // This if branch is a dirty workaround for now.
+                    loadedPages[id: id]!.transitionBehavior = .appear(newState.placement)
+                } else if oldState.hidden {
                     loadedPages[id: id]!.hidden = false
                     loadedPages[id: id]!.transitionBehavior = .appear(newState.placement)
                 } else {
@@ -192,6 +209,11 @@ extension TabStackFeature.State {
 
         guard !transitioningPages.isEmpty else { return }
 
+        if interactiveTransitionProgress == .end {
+            transitionProgress = .end
+            return
+        }
+
         for id in transitioningPages {
             loadedPages[id: id]!.transitionEffects = .init()
             loadedPages[id: id]!.wrapperTransitionEffects = .init()
@@ -207,6 +229,12 @@ extension TabStackFeature.State {
         }
         guard allDidStart else { return .none }
         transitionReportedStatus = .didStart
+
+        guard interactiveTransitionProgress == nil else {
+            print("This is an interactive transition so we do nothing")
+            return .none
+        }
+
         return .run { send in
             await send(.moveTransitionProgressToEnd)
         }
@@ -247,6 +275,9 @@ extension TabStackFeature.State {
             }
         }
         assert(transitioningPages.isEmpty)
+
+        interactiveTransitionProgress = nil
+        transitionUpdateToken = 0
 
         print("Transition did complete")
     }
