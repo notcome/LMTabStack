@@ -357,7 +357,11 @@ struct _TransitionGenerator: View {
                 let effects = subview.containerValues.transitionEffects
 
                 func send(_ action: PageHostingFeature.Action) {
-                    store.send(.loadedPages(.element(id: ref.pageID, action: action)), animation: animation)
+                    var transaction = Transaction(animation: animation)
+                    if store.interactiveTransitionProgress != nil, progress != .end {
+                        transaction.tracksVelocity = true
+                    }
+                    store.send(.loadedPages(.element(id: ref.pageID, action: action)), transaction: transaction)
                 }
 
                 switch ref {

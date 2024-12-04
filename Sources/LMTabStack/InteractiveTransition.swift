@@ -71,6 +71,7 @@ public struct InteractiveTransition<Definition: TransitionDefinition>: DynamicPr
         var transaction = Transaction()
         transaction.interactiveTransitionProgress = .start
         transaction.transitionProvider = box
+        transaction.tracksVelocity = true
         withTransaction(transaction, updateState)
     }
 
