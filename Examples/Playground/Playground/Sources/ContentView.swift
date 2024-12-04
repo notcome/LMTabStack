@@ -45,7 +45,10 @@ struct HomeToChild: TransitionDefinition {
     init?(home: PageProxy, child: PageProxy, tabBar: PageProxy, rootToChild: Bool, progress: TransitionProgress) {
         guard let childA = home.transitionElement(HomeChildPage.childA),
               let childB = home.transitionElement(HomeChildPage.childB)
-        else { return nil }
+        else {
+            print("Cannot construct HomeToChild because missing childA/childB")
+            return nil
+        }
 
         self.home = home
         self.child = child
@@ -89,13 +92,12 @@ struct HomeToChild: TransitionDefinition {
                     width: atStart ? cardSize.width : finalSize.width,
                     height: atStart ? cardSize.height : finalSize.height)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.spring(duration: 0.5), value: atStart)
                 .morphingViewContentZIndex(-1)
         }
     }
 
     var morphingViews: some View {
-        MorphingViewGroup(for: child.id.base as! HomePageID) {
+        MorphingViewGroup(for: child.id) {
             MorphingView(for: MorphingViewID.cardBackground) {
                 let cardOpened = switch childID {
                 case .childA:
@@ -118,14 +120,14 @@ struct HomeToChild: TransitionDefinition {
     }
 
     func transitions(morphingViews: MorphingViewsProxy) -> some View {
+        let _ = print("at start", rootToChild == (progress == .start), rootToChild, progress)
         let atStart = rootToChild == (progress == .start)
 
         // Opacity
-        Track(timing: .easeIn(duration: 1)) {
+        Track(timing: .easeOut(duration: 0.5)) {
             child.contentView
                 .transitionOpacity(atStart ? 0 : 1)
                 .transitionBlurRadius(atStart ? 10 : 0)
-                .pageTransition(\.atStart, atStart)
 
             if let content = morphingViews.morphingView(pageID: child.id, morphingViewID: MorphingViewID.cardContent) {
                 content
@@ -135,12 +137,14 @@ struct HomeToChild: TransitionDefinition {
         }
 
         // Movement
-        Track(timing: .spring(duration: 0.5)) {
+        Track(timing: .spring(duration: 0.5, bounce: 0)) {
+            let _ = print("track movement tab bar dy=", atStart ? 0 : 144)
             tabBar.contentView
                 .transitionOffset(y: atStart ? 0 : 144)
 
             child.contentView
                 .transitionScale(atStart ? 1e-3 : 1)
+                .pageTransition(\.atStart, atStart)
 
             MorphingMovement(
                 home: home,
@@ -200,6 +204,8 @@ struct HomeToChild: TransitionDefinition {
 
 struct SimpleTransitionProvider: TransitionProvider {
     func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
+        print("request transition with progress", progress)
+
         var tabBar: PageProxy?
         var pages: [HomePageID: PageProxy] = [:]
 
@@ -214,7 +220,10 @@ struct SimpleTransitionProvider: TransitionProvider {
             }
         }
 
-        guard pages.count == 2 else { return .empty }
+        guard pages.count == 2 else {
+            print("Empty because we don't have two pages. Found", Array(pages.keys))
+            return .empty
+        }
         if let root = pages[.root] {
             let child = (pages[.child(.childA)] ?? pages[.child(.childB)])!
 
@@ -231,9 +240,13 @@ struct SimpleTransitionProvider: TransitionProvider {
                 rootToChild: rootToChild,
                 progress: progress)
             else { return .empty }
+
+            print("request transition with progress", progress, "actually non-empty")
+
             return transition
         }
 
+        print("Empty because no root")
         return .empty
     }
 }

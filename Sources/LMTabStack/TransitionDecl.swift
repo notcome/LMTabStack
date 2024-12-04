@@ -50,6 +50,14 @@ public struct MorphingViewGroup<Content: View>: View {
     private var store
 
     public init(
+        for id: AnyPageID,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.id = id
+        self.content = content()
+    }
+
+    public init(
         for id: some Hashable & Sendable,
         @ViewBuilder content: () -> Content
     ) {

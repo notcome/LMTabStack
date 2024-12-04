@@ -234,17 +234,20 @@ struct TransitionGenerator: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let progress = store.transitionProgress
-            let pageProxies = store.loadedPages.compactMap { page in
-                PageProxy(state: page, globalProxy: proxy)
-            }
-
-            if let progress {
-                _TransitionGeneratorEq(
-                    progress: progress,
-                    pageProxies: IdentifiedArrayOf(uniqueElements: pageProxies)
-                ).equatable()
-            }
+            WithViewStore(
+                store,
+                observe: { state -> _TransitionGeneratorEq? in
+                    let progress = store.transitionProgress
+                    guard let progress else { return nil }
+                    let pageProxies = store.loadedPages.compactMap { page in
+                        PageProxy(state: page, globalProxy: proxy)
+                    }
+                    return .init(progress: progress, pageProxies: .init(uniqueElements: pageProxies))
+                }, content: { scopedStore in
+                    if let view = scopedStore.state {
+                        view.equatable()
+                    }
+                })
         }
     }
 }
@@ -327,6 +330,7 @@ struct _TransitionGenerator: View {
 
                 switch ref {
                 case .content:
+                    print("sync content", effects, ref.pageID.base)
                     send(.syncTransitionEffects(effects))
                 case .wrapper:
                     send(.syncWrapperTransitionEffects(effects))
@@ -343,6 +347,7 @@ struct _TransitionGenerator: View {
         }
 
         for id in pageProxies.ids {
+            print("sync transition did", progress == .start ? "start" : "end", id.base)
             send(id: id, action: progress == .start ? .transitionDidStart : .transitionDidEnd(animationDuration))
         }
     }

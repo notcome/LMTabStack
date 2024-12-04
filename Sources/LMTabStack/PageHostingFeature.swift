@@ -134,6 +134,8 @@ struct PageHostingFeature {
                 state.transitionElements[id: id] = nil
             }
 
+            print("transition elements merged", state.transitionElements.ids.map(\.base))
+
         case .syncMorphingViewContents(let contents):
             for content in contents {
                 if state.morphingViewContents[id: content.id] == nil {

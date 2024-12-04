@@ -110,27 +110,47 @@ public struct TransitionAnimation {
         animation.createSwiftUIAnimation()
     }
 
-    public static func linear(duration: Double = 0.35) -> Self {
+    public static func linear(duration: Double) -> Self {
         .init(animation: TimingCurveTransitionAnimation(timingCurve: .linear, duration: duration))
     }
 
-    public static func easeIn(duration: Double = 0.35) -> Self {
+    public static var linear: Self {
+        .linear(duration: 0.35)
+    }
+
+    public static func easeIn(duration: Double) -> Self {
         .init(animation: TimingCurveTransitionAnimation(timingCurve: .easeIn, duration: duration))
     }
 
-    public static func easeOut(duration: Double = 0.35) -> Self {
+    public static var easeIn: Self {
+        .easeIn(duration: 0.35)
+    }
+
+    public static func easeOut(duration: Double) -> Self {
         .init(animation: TimingCurveTransitionAnimation(timingCurve: .easeOut, duration: duration))
     }
 
-    public static func easeInOut(duration: Double = 0.35) -> Self {
+    public static var easeOut: Self {
+        .easeOut(duration: 0.35)
+    }
+
+    public static func easeInOut(duration: Double) -> Self {
         .init(animation: TimingCurveTransitionAnimation(timingCurve: .easeInOut, duration: duration))
+    }
+
+    public static var easeInOut: Self {
+        .easeInOut(duration: 0.35)
     }
 
     public static func custom(_ p1x: Double, _ p1y: Double, _ p2x: Double, _ p2y: Double, duration: Double = 0.35) -> Self {
         .init(animation: TimingCurveTransitionAnimation(timingCurve: .custom(p1x, p1y, p2x, p2y), duration: duration))
     }
 
-    public static func spring(duration: TimeInterval = 0.5, bounce: Double = 0) -> Self {
+    public static func spring(duration: TimeInterval, bounce: Double) -> Self {
         .init(animation: SpringTransitionAnimation(timing: .simple(duration: duration, bounce: bounce)))
+    }
+
+    public static var spring: Self {
+        .spring(duration: 0.5, bounce: 0)
     }
 }

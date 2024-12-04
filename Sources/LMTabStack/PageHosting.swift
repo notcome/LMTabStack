@@ -35,7 +35,11 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
                 .environment(childStore)
             }
         }
+        .onAppear {
+            print("on appear", id.base)
+        }
         .tag(id)
+        .id(id)
     }
 }
 
@@ -71,6 +75,7 @@ struct PageHostingView: View {
             .absolutePlacement(frame: placement.frame, parentBounds: bounds)
             .opacity(opacity)
             .onPreferenceChange(TransitionElementSummary.self) { summary in
+                let _ = print("sync transition elements", summary.elements.keys.map(\.base))
                 store.send(.syncTransitionElements(summary))
             }
         }

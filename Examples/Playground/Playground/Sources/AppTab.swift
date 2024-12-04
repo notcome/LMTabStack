@@ -41,30 +41,32 @@ struct AppTabBar: View {
     var selectedTab: AppTab
 
     var body: some View {
-        HStack {
-            ForEach(AppTab.allCases, id: \.self) { tab in
-                Image(systemName: tab.systemImage)
-                    .font(.system(size: 17))
-                    .frame(width: 48, height: 48)
-                    .contentShape(Rectangle())
-                    .opacity(tab == selectedTab ? 1 : 0.3)
-                    .foregroundStyle(.white)
-                    .onTapGesture {
-                        withAnimation(.snappy) {
-                            selectedTab = tab
+        GeometryReader { proxy in
+            HStack {
+                ForEach(AppTab.allCases, id: \.self) { tab in
+                    Image(systemName: tab.systemImage)
+                        .font(.system(size: 17))
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
+                        .opacity(tab == selectedTab ? 1 : 0.3)
+                        .foregroundStyle(.white)
+                        .onTapGesture {
+                            withAnimation(.snappy) {
+                                selectedTab = tab
+                            }
                         }
-                    }
 
-                if tab != AppTab.allCases.last {
-                    Spacer()
+                    if tab != AppTab.allCases.last {
+                        Spacer()
+                    }
                 }
             }
+            .padding(.horizontal, 48)
+            .frame(maxWidth: 360)
+            .background { Color.black }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, 48)
-        .frame(maxWidth: 360)
-        .background { Color.black }
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity)
     }
 }

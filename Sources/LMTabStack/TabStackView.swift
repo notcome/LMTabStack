@@ -13,11 +13,13 @@ private struct PlacementView: View {
 
     var body: some View {
         GeometryReader { proxy in
+            let _ = print(store.loadedPages.map(\.id.base))
+
             ForEach(store.loadedPages) { loadedPage in
+                let _ = print("actually render", loadedPage.id.base)
                 let id = loadedPage.id
 
-                if let pageContent = pages[id: id] ?? store.pageContents[id: id]//,
-                {
+                if let pageContent = pages[id: id] ?? store.pageContents[id: id] {
                     pageContent.content.zIndex(loadedPage.placement.zIndex)
                 }
             }

@@ -31,7 +31,7 @@ enum HomeChildPage: Hashable, CaseIterable {
 
 @Observable
 final class HomeModel {
-    var childPage: HomeChildPage?
+    var childPage: HomeChildPage? = .childA
 }
 
 struct HomeChildButton: View {
@@ -68,11 +68,17 @@ struct HomeChildButton: View {
             .onTapGesture {
                 switch action {
                 case .close:
-                    withAnimation {
+                    var transaction = Transaction(animation: .default)
+                    transaction.transitionProvider = SimpleTransitionProvider()
+                    withTransaction(transaction) {
                         handleAction()
                     }
                 default:
-                    handleAction()
+                    var transaction = Transaction(animation: .default)
+                    transaction.transitionProvider = SideBySideProvider()
+                    withTransaction(transaction) {
+                        handleAction()
+                    }
                 }
             }
     }
@@ -106,10 +112,7 @@ struct HomeChildView: View {
                 HomeChildButton(action: page == .childA ? .toB : .toA)
                     .padding(36)
             }
-            .environment(model)
     }
-
-
 }
 
 struct HomeView: View {

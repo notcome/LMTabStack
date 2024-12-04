@@ -95,7 +95,9 @@ struct TabStackFeature {
             state.animate(to: cvs.layout)
 
         case .sync(.pageContents(let pageContents)):
-            state.pageContents = pageContents
+            for page in pageContents {
+                state.pageContents.append(page)
+            }
 
         case let .loadedPages(.element(id: page, action: .transitionDidStart)):
             return state.transitionDidStart(for: page)
