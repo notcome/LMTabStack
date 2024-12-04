@@ -108,7 +108,15 @@ struct EmptyTransitionProvider: TransitionProvider {
 
 extension Transaction {
     @Entry
-    public var transitionProvider: any TransitionProvider = EmptyTransitionProvider()
+    public var transitionProvider: (any TransitionProvider)? = nil
+}
+
+public func withTransitionProvider(_ provider: any TransitionProvider, action: () -> Void) {
+    var transaction = Transaction()
+    transaction.transitionProvider = provider
+    withTransaction(transaction) {
+        action()
+    }
 }
 
 public struct PageProxy: Identifiable, Equatable {
@@ -145,9 +153,11 @@ public struct PageProxy: Identifiable, Equatable {
     }
 
     public subscript(proxy: TransitionElementProxy) -> CGRect {
+        let dx = globalProxy.safeAreaInsets.leading
+        let dy = globalProxy.safeAreaInsets.top
         var rect = globalProxy[proxy.anchor]
-        rect.origin.x += frame.origin.x
-        rect.origin.y += frame.origin.y
+        rect.origin.x += frame.origin.x + dx
+        rect.origin.y += frame.origin.y + dy
         return rect
     }
 }

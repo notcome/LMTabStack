@@ -25,9 +25,7 @@ private struct _TabStackLayoutView: View {
             let layout = computeLayout(proxy: proxy)
             Color.clear
                 .onChangeWithTransaction(of: layout) { layout, tx in
-                    let animated = !tx.disablesAnimations && tx.animation != nil
                     let cvs = TabStackFeature.CurrentViewState(
-                        animated: animated,
                         transitionProvider: tx.transitionProvider,
                         layout: layout)
                     store.send(.sync(.currentViewState(cvs)))

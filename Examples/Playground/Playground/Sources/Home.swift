@@ -68,15 +68,11 @@ struct HomeChildButton: View {
             .onTapGesture {
                 switch action {
                 case .close:
-                    var transaction = Transaction(animation: .default)
-                    transaction.transitionProvider = SimpleTransitionProvider()
-                    withTransaction(transaction) {
+                    withTransitionProvider(RootToChildProvider()) {
                         handleAction()
                     }
                 default:
-                    var transaction = Transaction(animation: .default)
-                    transaction.transitionProvider = SideBySideProvider()
-                    withTransaction(transaction) {
+                    withTransitionProvider(SideBySideProvider()) {
                         handleAction()
                     }
                 }
@@ -132,9 +128,7 @@ struct HomeView: View {
                     .frame(maxWidth: 240)
                     .onTapGesture {
                         guard model.childPage != page else { return}
-                        var transaction = Transaction(animation: .default)
-                        transaction.transitionProvider = SimpleTransitionProvider()
-                        withTransaction(transaction) {
+                        withTransitionProvider(RootToChildProvider()) {
                             model.childPage = page
                         }
                     }

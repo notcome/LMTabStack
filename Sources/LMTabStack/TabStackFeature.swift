@@ -49,8 +49,7 @@ struct TabStackFeature {
     }
 
     struct CurrentViewState {
-        var animated: Bool
-        var transitionProvider: any TransitionProvider
+        var transitionProvider: (any TransitionProvider)?
         var layout: LayoutOutput
     }
 
@@ -77,7 +76,7 @@ struct TabStackFeature {
     private func reduceSelf(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .sync(.currentViewState(let cvs)):
-            guard cvs.animated else {
+            guard let provider = cvs.transitionProvider else {
                 state.update(to: cvs.layout)
                 break
             }
@@ -91,7 +90,7 @@ struct TabStackFeature {
                 state.update(to: cvs.layout)
                 break
             }
-            state.transitionProvider = cvs.transitionProvider
+            state.transitionProvider = provider
             state.animate(to: cvs.layout)
 
         case .sync(.pageContents(let pageContents)):
