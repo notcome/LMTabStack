@@ -112,23 +112,23 @@ extension Transaction {
 }
 
 public struct PageProxy: Identifiable, Equatable {
-    var state: PageHostingFeature.State
     @EqualityIgnored
     var globalProxy: GeometryProxy
 
     init?(state: PageHostingFeature.State, globalProxy: GeometryProxy) {
-        guard state.transitionBehavior != nil else { return nil }
-        self.state = state
+        guard let transitionBehavior = state.transitionBehavior else { return nil }
         self.globalProxy = globalProxy
+
+        id = state.id
+        behaivor = transitionBehavior
+        frame = state.placement.frame
+        transitionElements = state.transitionElements
     }
 
-    public var id: AnyPageID {
-        state.id
-    }
-
-    public var behaivor: PageTransitionBehavior {
-        state.transitionBehavior!
-    }
+    public var id: AnyPageID
+    public var behaivor: PageTransitionBehavior
+    public var frame: CGRect
+    var transitionElements: IdentifiedArrayOf<TransitionElementState>
 
     public var contentView: some View {
         ViewRefView(ref: .content(id))
@@ -140,12 +140,8 @@ public struct PageProxy: Identifiable, Equatable {
 
     public func transitionElement(_ id: some Hashable & Sendable) -> TransitionElementProxy? {
         let id = AnyTransitionElementID(id)
-        guard let value = state.transitionElements[id: id] else { return nil }
+        guard let value = transitionElements[id: id] else { return nil }
         return .init(id: .init(pageID: self.id, elementID: id), anchor: value.anchor)
-    }
-
-    public var frame: CGRect {
-        state.placement.frame
     }
 
     public subscript(proxy: TransitionElementProxy) -> CGRect {
