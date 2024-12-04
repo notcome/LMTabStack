@@ -176,7 +176,6 @@ struct HomeToChild: TransitionDefinition {
 struct RootToChildProvider: TransitionProvider {
     func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
         print("request transition with progress", progress)
-
         var tabBar: PageProxy?
         var pages: [HomePageID: PageProxy] = [:]
 

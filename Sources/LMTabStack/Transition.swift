@@ -130,13 +130,16 @@ public struct PageProxy: Identifiable, Equatable {
         id = state.id
         behaivor = transitionBehavior
         frame = state.placement.frame
-        transitionElements = state.transitionElements
+        transitionElements = [:]
+        for element in state.transitionElements {
+            transitionElements[element.id] = element.anchor
+        }
     }
 
     public var id: AnyPageID
     public var behaivor: PageTransitionBehavior
     public var frame: CGRect
-    var transitionElements: IdentifiedArrayOf<TransitionElementState>
+    var transitionElements: [AnyTransitionElementID: Anchor<CGRect>]
 
     public var contentView: some View {
         ViewRefView(ref: .content(id))
@@ -148,8 +151,8 @@ public struct PageProxy: Identifiable, Equatable {
 
     public func transitionElement(_ id: some Hashable & Sendable) -> TransitionElementProxy? {
         let id = AnyTransitionElementID(id)
-        guard let value = transitionElements[id: id] else { return nil }
-        return .init(id: .init(pageID: self.id, elementID: id), anchor: value.anchor)
+        guard let anchor = transitionElements[id] else { return nil }
+        return .init(id: .init(pageID: self.id, elementID: id), anchor: anchor)
     }
 
     public subscript(proxy: TransitionElementProxy) -> CGRect {
@@ -245,10 +248,15 @@ struct TransitionGenerator: View {
                 observe: { state -> _TransitionGeneratorEq? in
                     let progress = store.transitionProgress
                     guard let progress else { return nil }
-                    let pageProxies = store.loadedPages.compactMap { page in
-                        PageProxy(state: page, globalProxy: proxy)
+                    var pageProxies: IdentifiedArrayOf<PageProxy> = []
+                    for page in store.loadedPages {
+                        // We only generate transition when the page is fully loaded
+                        guard page.transitionElementsMounted else { return nil }
+                        if let pageProxy = PageProxy(state: page, globalProxy: proxy) {
+                            pageProxies.append(pageProxy)
+                        }
                     }
-                    return .init(progress: progress, pageProxies: .init(uniqueElements: pageProxies))
+                    return .init(progress: progress, pageProxies: pageProxies)
                 }, content: { scopedStore in
                     if let view = scopedStore.state {
                         view.equatable()
