@@ -8,7 +8,7 @@ public protocol PageLayoutValueKey {
 public struct PageLayoutValues: Equatable {
     private var storage: [ObjectIdentifier: AnySendableEquatable] = [:]
 
-    subscript<K: PageLayoutValueKey>(type: K.Type) -> K.Value {
+    public subscript<K: PageLayoutValueKey>(type: K.Type) -> K.Value {
         get {
             let key = ObjectIdentifier(type)
             guard let value = storage[key] else { return K.defaultValue }
