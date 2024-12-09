@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct TransitionElementSummary: Equatable {
+    var pageAnchor: Anchor<CGRect>?
     var elements: [AnyTransitionElementID: Anchor<CGRect>] = [:]
 
     mutating func merge(_ other: TransitionElementSummary) {
+        if let pageAnchor = other.pageAnchor {
+            self.pageAnchor = pageAnchor
+        }
         for (id, anchor) in other.elements {
             elements[id] = anchor
         }

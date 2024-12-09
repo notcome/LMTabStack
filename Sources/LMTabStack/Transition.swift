@@ -1,61 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct TransitionEffects: Equatable {
-    var scaleX: CGFloat?
-    var scaleY: CGFloat?
-    var offsetX: CGFloat?
-    var offsetY: CGFloat?
-    var opacity: CGFloat?
-    var blurRadius: CGFloat?
-
-    mutating func merge(other: TransitionEffects) {
-        if let scaleX = other.scaleX {
-            self.scaleX = scaleX
-        }
-        if let scaleY = other.scaleY {
-            self.scaleY = scaleY
-        }
-        if let offsetX = other.offsetX {
-            self.offsetX = offsetX
-        }
-        if let offsetY = other.offsetY {
-            self.offsetY = offsetY
-        }
-        if let opacity = other.opacity {
-            self.opacity = opacity
-        }
-        if let blurRadius = other.blurRadius {
-            self.blurRadius = blurRadius
-        }
-    }
-}
-
-extension TransitionEffects: CustomDebugStringConvertible {
-    var debugDescription: String {
-        var components: [String] = []
-        if let scaleX = scaleX { components.append("sx: \(scaleX)") }
-        if let scaleY = scaleY { components.append("sy: \(scaleY)") }
-        if let offsetX = offsetX { components.append("dx: \(offsetX)") }
-        if let offsetY = offsetY { components.append("dy: \(offsetY)") }
-        if let opacity = opacity { components.append("alpha: \(opacity)") }
-        if let blurRadius = blurRadius { components.append("blurRadius: \(blurRadius)") }
-        return "TransitionEffects(\(components.joined(separator: ", ")))"
-    }
-}
-
-extension TransitionEffects: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .visualEffect { body, _ in
-                body
-                    .scaleEffect(x: scaleX ?? 1, y: scaleY ?? 1)
-                    .offset(x: offsetX ?? 0, y: offsetY ?? 0)
-                    .opacity(opacity ?? 1)
-                    .blur(radius: blurRadius ?? 0)
-            }
-    }
-}
 
 extension ContainerValues {
     @Entry
@@ -135,9 +80,10 @@ public struct PageProxy: Identifiable, Equatable {
     @EqualityIgnored
     var globalProxy: GeometryProxy
 
-    init?(state: PageHostingFeature.State, globalProxy: GeometryProxy) {
+    init?(state: PageHostingFeature.State, globalProxy: GeometryProxy, pageAnchor: Anchor<CGRect>?) {
         guard let transitionBehavior = state.transitionBehavior else { return nil }
         self.globalProxy = globalProxy
+        self.pageAnchor = pageAnchor
 
         id = state.id
         behaivor = transitionBehavior
@@ -151,6 +97,8 @@ public struct PageProxy: Identifiable, Equatable {
     public var id: AnyPageID
     public var behaivor: PageTransitionBehavior
     public var frame: CGRect
+
+    var pageAnchor: Anchor<CGRect>?
     var transitionElements: [AnyTransitionElementID: Anchor<CGRect>]
 
     public var contentView: some View {
@@ -168,11 +116,11 @@ public struct PageProxy: Identifiable, Equatable {
     }
 
     public subscript(proxy: TransitionElementProxy) -> CGRect {
-        let dx = globalProxy.safeAreaInsets.leading
-        let dy = globalProxy.safeAreaInsets.top
         var rect = globalProxy[proxy.anchor]
-        rect.origin.x += frame.origin.x + dx
-        rect.origin.y += frame.origin.y + dy
+        let pageFrame = pageAnchor.map { globalProxy[$0] } ?? frame
+
+        rect.origin.x -= pageFrame.origin.x
+        rect.origin.y -= pageFrame.origin.y
         return rect
     }
 }
@@ -264,7 +212,7 @@ struct TransitionGenerator: View {
                     for page in store.loadedPages {
                         // We only generate transition when the page is fully loaded
                         guard page.transitionElementsMounted else { return nil }
-                        if let pageProxy = PageProxy(state: page, globalProxy: proxy) {
+                        if let pageProxy = PageProxy(state: page, globalProxy: proxy, pageAnchor: page.pageAnchor) {
                             pageProxies.append(pageProxy)
                         }
                     }
@@ -289,6 +237,7 @@ struct _TransitionGeneratorEq: Equatable {
 
 extension _TransitionGeneratorEq: View {
     var body: some View {
+        let _ = print("eq changed")
         _TransitionGenerator(token: token, progress: progress, pageProxies: pageProxies)
     }
 }

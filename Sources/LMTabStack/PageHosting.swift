@@ -71,6 +71,9 @@ struct PageHostingView: View {
 
                 }
             }
+            .transformAnchorPreference(key: TransitionElementSummary.self, value: .bounds) { summary, pageAnchor in
+                summary.pageAnchor = pageAnchor
+            }
             .modifier(store.wrapperTransitionEffects ?? .init())
             .absolutePlacement(frame: placement.frame, parentBounds: bounds)
             .opacity(opacity)

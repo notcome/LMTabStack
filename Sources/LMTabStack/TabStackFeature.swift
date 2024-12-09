@@ -279,6 +279,6 @@ extension TabStackFeature.State {
         interactiveTransitionProgress = nil
         transitionUpdateToken = 0
 
-        print("Transition did complete")
+        logger.trace("Transition did complete")
     }
 }

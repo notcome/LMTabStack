@@ -24,6 +24,7 @@ struct PageHostingFeature {
 
         @ObservationStateIgnored
         var transitionElementsMounted: Bool = false
+        var pageAnchor: Anchor<CGRect>?
         var transitionElements: IdentifiedArrayOf<TransitionElementState> = []
 
         @ObservationStateIgnored
@@ -123,6 +124,7 @@ struct PageHostingFeature {
 
         case .syncTransitionElements(let summary):
             state.transitionElementsMounted = true
+            state.pageAnchor = summary.pageAnchor
             for (id, anchor) in summary.elements {
                 if state.transitionElements[id: id] != nil {
                     state.transitionElements[id: id]!.anchor = anchor
