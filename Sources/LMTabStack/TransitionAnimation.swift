@@ -4,7 +4,14 @@ protocol TransitionAnimationProtocol {
     var duration: Double { get }
 
     func createCAAnimation() -> CABasicAnimation
+    func createCAAnimation(initialVelocity: Double) -> CABasicAnimation
     func createSwiftUIAnimation() -> Animation
+}
+
+extension TransitionAnimationProtocol {
+    func createCAAnimation(initialVelocity: Double) -> CABasicAnimation {
+        createCAAnimation()
+    }
 }
 
 enum TimingCurve: Hashable {
@@ -84,6 +91,12 @@ struct SpringTransitionAnimation: TransitionAnimationProtocol {
 
     func createCAAnimation() -> CABasicAnimation {
         timing.createCAAnimation()
+    }
+
+    func createCAAnimation(initialVelocity: Double) -> CABasicAnimation {
+        let animation = timing.createCAAnimation()
+        animation.initialVelocity = initialVelocity
+        return animation
     }
 
     func createSwiftUIAnimation() -> Animation {

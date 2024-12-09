@@ -231,7 +231,7 @@ private final class _PageHostingViewController: UIViewController {
 
         for (id, view) in morphingViews {
             let effects = dict[id]
-            view.apply(effects: effects ?? .init(), createCAAnimation: transaction.createCAAnimation)
+            view.apply(effects: effects ?? .init(), transaction: transaction)
             withTransaction(transaction) {
                 morphingHostingViews[id]!.rootView.effects = effects
             }
@@ -256,14 +256,14 @@ private struct _PageHostingViewControllerRepresentable: UIViewControllerRepresen
             vc.hostingController.rootView.transitionProgress = transitionProgress
         }
 
-        vc.contentView.apply(effects: store.transitionEffects, createCAAnimation: context.transaction.createCAAnimation)
+        vc.contentView.apply(effects: store.transitionEffects, transaction: context.transaction)
 
         vc.updateMorphingViews(
             store.morphingViewContents,
             dict: store.morphingViewEffects,
             transaction: context.transaction)
 
-        vc.wrapperView.apply(effects: store.wrapperTransitionEffects, createCAAnimation: context.transaction.createCAAnimation)
+        vc.wrapperView.apply(effects: store.wrapperTransitionEffects, transaction: context.transaction)
     }
 }
 
@@ -284,13 +284,43 @@ final class _AnimatableView: UIView {
     }
 
     private var keyPathStates: [String: KeyPathState] = [:]
+    private var velocityTrackers: [String: VelocityTracker] = [:]
+
+    struct VelocityTracker {
+        private var samples: [(CFTimeInterval, Double)] = []
+
+        mutating func addSample(_ value: Double) {
+            let pair = (CACurrentMediaTime(), value)
+            switch samples.count {
+            case 2:
+                samples[0] = samples[1]
+                samples[1] = pair
+            case 0, 1:
+                samples.append(pair)
+            default:
+                fatalError()
+            }
+        }
+
+        var absoluteVelocity: Double {
+            switch samples.count {
+            case 2:
+                let (t1, x1) = samples[0]
+                let (t2, x2) = samples[1]
+                return (x2 - x1) / (t2 - t1)
+            default:
+                return 0
+            }
+        }
+    }
 
     func resetAllAnimations() {
         layer.removeAllAnimations()
         keyPathStates = [:]
+        velocityTrackers = [:]
     }
 
-    private func addConstantAnimation(keyPath: String, value: Double) {
+    private func addConstantAnimation(keyPath: String, value: Double, transaction: Transaction) {
         let animation = CABasicAnimation(keyPath: keyPath)
         animation.fromValue = value
         animation.toValue = value
@@ -298,6 +328,10 @@ final class _AnimatableView: UIView {
         animation.isRemovedOnCompletion = false
         layer.add(animation, forKey: keyPath)
         keyPathStates[keyPath] = .constant(value)
+
+        if transaction.tracksVelocity {
+            velocityTrackers[keyPath, default: .init()].addSample(value)
+        }
     }
 
     private func addAnimation(_ animation: CABasicAnimation, keyPath: String, from oldValue: Double, to newValue: Double) {
@@ -310,52 +344,62 @@ final class _AnimatableView: UIView {
         keyPathStates[keyPath] = .animating(oldValue, newValue)
     }
 
-    private func update(keyPath: String, to newValue: Double, createCAAnimation: (() -> CABasicAnimation)?) {
+    private func update(keyPath: String, to newValue: Double, transaction: Transaction) {
+        let transitionAnimation = transaction.transitionAnimation
+
         guard let state = keyPathStates[keyPath] else {
-            assert(createCAAnimation == nil)
-            addConstantAnimation(keyPath: keyPath, value: newValue)
+            assert(transitionAnimation == nil)
+            addConstantAnimation(keyPath: keyPath, value: newValue, transaction: transaction)
             return
         }
 
         switch state {
         case let .constant(oldValue):
             guard oldValue != newValue else { return }
-            guard let createCAAnimation else {
-                addConstantAnimation(keyPath: keyPath, value: newValue)
+            guard let transitionAnimation else {
+                addConstantAnimation(keyPath: keyPath, value: newValue, transaction: transaction)
                 return
             }
-            addAnimation(createCAAnimation(), keyPath: keyPath, from: oldValue, to: newValue)
+            let animation: CABasicAnimation
+            if let absoluteVelocity = velocityTrackers[keyPath]?.absoluteVelocity, absoluteVelocity != 0 {
+                let relativeVelocity = absoluteVelocity / (newValue - oldValue)
+                animation = transitionAnimation.animation.createCAAnimation(initialVelocity: relativeVelocity)
+            } else {
+                animation = transitionAnimation.animation.createCAAnimation()
+            }
+            addAnimation(animation, keyPath: keyPath, from: oldValue, to: newValue)
 
         case let .animating(oldValue, currentNewValue):
-            guard let createCAAnimation else {
-                addConstantAnimation(keyPath: keyPath, value: newValue)
+            guard let transitionAnimation else {
+                addConstantAnimation(keyPath: keyPath, value: newValue, transaction: transaction)
                 return
             }
             guard currentNewValue != newValue else { return }
-            addAnimation(createCAAnimation(), keyPath: keyPath, from: oldValue, to: newValue)
+            assertionFailure()
+            addAnimation(transitionAnimation.createCAAnimation(), keyPath: keyPath, from: oldValue, to: newValue)
         }
     }
 
-    func apply(effects: TransitionEffects?, createCAAnimation: (() -> CABasicAnimation)?) {
+    func apply(effects: TransitionEffects?, transaction: Transaction) {
         guard let effects else {
             resetAllAnimations()
             return
         }
 
         if let opacity = effects.opacity {
-            update(keyPath: "opacity", to: opacity, createCAAnimation: createCAAnimation)
+            update(keyPath: "opacity", to: opacity, transaction: transaction)
         }
         if let scaleX = effects.scaleX {
-            update(keyPath: "transform.scale.x", to: scaleX, createCAAnimation: createCAAnimation)
+            update(keyPath: "transform.scale.x", to: scaleX, transaction: transaction)
         }
         if let scaleY = effects.scaleY {
-            update(keyPath: "transform.scale.y", to: scaleY, createCAAnimation: createCAAnimation)
+            update(keyPath: "transform.scale.y", to: scaleY, transaction: transaction)
         }
         if let offsetX = effects.offsetX {
-            update(keyPath: "transform.translation.x", to: offsetX, createCAAnimation: createCAAnimation)
+            update(keyPath: "transform.translation.x", to: offsetX, transaction: transaction)
         }
         if let offsetY = effects.offsetY {
-            update(keyPath: "transform.translation.y", to: offsetY, createCAAnimation: createCAAnimation)
+            update(keyPath: "transform.translation.y", to: offsetY, transaction: transaction)
         }
     }
 }

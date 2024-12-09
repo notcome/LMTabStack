@@ -307,7 +307,7 @@ struct _TransitionGenerator: View {
 
                 func send(_ action: PageHostingFeature.Action) {
                     var transaction = Transaction(animation: animation)
-                    transaction.createCAAnimation = transitionAnimation?.createCAAnimation
+                    transaction.transitionAnimation = transitionAnimation
 
                     if store.interactiveTransitionProgress != nil, progress != .end {
                         transaction.tracksVelocity = true
@@ -317,7 +317,6 @@ struct _TransitionGenerator: View {
 
                 switch ref {
                 case .content:
-//                    print("sycn effects", effects)
                     send(.syncTransitionEffects(effects))
                 case .wrapper:
                     send(.syncWrapperTransitionEffects(effects))
@@ -341,5 +340,5 @@ struct _TransitionGenerator: View {
 
 extension Transaction {
     @Entry
-    var createCAAnimation: (() -> CABasicAnimation)?
+    var transitionAnimation: TransitionAnimation?
 }

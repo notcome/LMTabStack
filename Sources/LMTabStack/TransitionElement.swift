@@ -95,7 +95,7 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
             hostingView.rootView.effects = effects
         }
 
-        view.apply(effects: effects, createCAAnimation: context.transaction.createCAAnimation)
+        view.apply(effects: effects, transaction: context.transaction)
     }
 }
 
