@@ -80,7 +80,7 @@ public struct PageProxy: Identifiable, Equatable {
     @EqualityIgnored
     var globalProxy: GeometryProxy
 
-    init?(state: PageHostingFeature.State, globalProxy: GeometryProxy, pageAnchor: Anchor<CGRect>?) {
+    init?(state: PageHostingFeature.State, globalProxy: GeometryProxy, pageAnchor: Anchor<CGRect>) {
         guard let transitionBehavior = state.transitionBehavior else { return nil }
         self.globalProxy = globalProxy
         self.pageAnchor = pageAnchor
@@ -98,7 +98,7 @@ public struct PageProxy: Identifiable, Equatable {
     public var behaivor: PageTransitionBehavior
     public var frame: CGRect
 
-    var pageAnchor: Anchor<CGRect>?
+    var pageAnchor: Anchor<CGRect>
     var transitionElements: [AnyTransitionElementID: Anchor<CGRect>]
 
     public var contentView: some View {
@@ -117,7 +117,7 @@ public struct PageProxy: Identifiable, Equatable {
 
     public subscript(proxy: TransitionElementProxy) -> CGRect {
         var rect = globalProxy[proxy.anchor]
-        let pageFrame = pageAnchor.map { globalProxy[$0] } ?? frame
+        let pageFrame = globalProxy[pageAnchor]
 
         rect.origin.x -= pageFrame.origin.x
         rect.origin.y -= pageFrame.origin.y
@@ -211,8 +211,8 @@ struct TransitionGenerator: View {
                     var pageProxies: IdentifiedArrayOf<PageProxy> = []
                     for page in store.loadedPages {
                         // We only generate transition when the page is fully loaded
-                        guard page.transitionElementsMounted else { return nil }
-                        if let pageProxy = PageProxy(state: page, globalProxy: proxy, pageAnchor: page.pageAnchor) {
+                        guard let pageAnchor = page.pageAnchor else { return nil }
+                        if let pageProxy = PageProxy(state: page, globalProxy: proxy, pageAnchor: pageAnchor) {
                             pageProxies.append(pageProxy)
                         }
                     }
@@ -288,8 +288,8 @@ struct _TransitionGenerator: View {
     }
 
     func update(sections: SectionCollection) {
-        func send(id: AnyPageID, action: PageHostingFeature.Action, animation: Animation? = nil) {
-            store.send(.loadedPages(.element(id: id, action: action)), animation: animation)
+        func send(id: AnyPageID, action: PageHostingFeature.Action) {
+            store.send(.loadedPages(.element(id: id, action: action)))
         }
 
         var animationDuration: TimeInterval = 0
@@ -307,6 +307,8 @@ struct _TransitionGenerator: View {
 
                 func send(_ action: PageHostingFeature.Action) {
                     var transaction = Transaction(animation: animation)
+                    transaction.createCAAnimation = transitionAnimation?.createCAAnimation
+
                     if store.interactiveTransitionProgress != nil, progress != .end {
                         transaction.tracksVelocity = true
                     }
@@ -315,6 +317,7 @@ struct _TransitionGenerator: View {
 
                 switch ref {
                 case .content:
+//                    print("sycn effects", effects)
                     send(.syncTransitionEffects(effects))
                 case .wrapper:
                     send(.syncWrapperTransitionEffects(effects))
@@ -334,4 +337,9 @@ struct _TransitionGenerator: View {
             send(id: id, action: progress == .start ? .transitionDidStart : .transitionDidEnd(animationDuration))
         }
     }
+}
+
+extension Transaction {
+    @Entry
+    var createCAAnimation: (() -> CABasicAnimation)?
 }

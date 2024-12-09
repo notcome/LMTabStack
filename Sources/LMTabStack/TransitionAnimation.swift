@@ -3,7 +3,7 @@ import SwiftUI
 protocol TransitionAnimationProtocol {
     var duration: Double { get }
 
-    func createCAAnimation() -> CAPropertyAnimation
+    func createCAAnimation() -> CABasicAnimation
     func createSwiftUIAnimation() -> Animation
 }
 
@@ -38,7 +38,7 @@ struct TimingCurveTransitionAnimation: TransitionAnimationProtocol {
     var timingCurve: TimingCurve
     var duration: Double
 
-    func createCAAnimation() -> CAPropertyAnimation {
+    func createCAAnimation() -> CABasicAnimation {
         let timingFunction = timingCurve.timingFunction
         let animation = CABasicAnimation()
         animation.timingFunction = timingFunction
@@ -82,7 +82,7 @@ struct SpringTransitionAnimation: TransitionAnimationProtocol {
         self.duration = timing.createCAAnimation().duration
     }
 
-    func createCAAnimation() -> CAPropertyAnimation {
+    func createCAAnimation() -> CABasicAnimation {
         timing.createCAAnimation()
     }
 
@@ -102,7 +102,7 @@ struct SpringTransitionAnimation: TransitionAnimationProtocol {
 public struct TransitionAnimation {
     var animation: any TransitionAnimationProtocol
 
-    public func createCAAnimation() -> CAPropertyAnimation {
+    public func createCAAnimation() -> CABasicAnimation {
         animation.createCAAnimation()
     }
 

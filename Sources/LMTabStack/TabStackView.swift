@@ -93,6 +93,9 @@ public enum PageVisiblity {
 
 extension EnvironmentValues {
     @Entry
+    public var tabStackRenderingMode: TabStackRenderingMode = .hybrid
+
+    @Entry
     public var pageVisiblity: PageVisiblity = .visible
 }
 

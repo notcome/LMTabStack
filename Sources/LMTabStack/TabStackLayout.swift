@@ -29,22 +29,3 @@ public struct PagePlacement: Equatable {
     public var frame: CGRect
     public var safeAreaInsets: EdgeInsets
 }
-
-struct AbsolutePlacementModifier: ViewModifier {
-    var frame: CGRect
-    var parentBounds: CGRect
-
-    func body(content: Content) -> some View {
-        content
-            .frame(width: frame.width, height: frame.height)
-            .offset(x: frame.minX, y: frame.minY)
-            .frame(width: parentBounds.width, height: parentBounds.height, alignment: .topLeading)
-    }
-}
-
-extension View {
-    func absolutePlacement(frame: CGRect, parentBounds: CGRect) -> some View {
-        modifier(AbsolutePlacementModifier(frame: frame, parentBounds: parentBounds))
-    }
-}
-

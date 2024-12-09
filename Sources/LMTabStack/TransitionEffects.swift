@@ -77,7 +77,6 @@ private struct ScaleEffect: GeometryEffect {
     }
 }
 
-
 extension TransitionEffects: ViewModifier {
     func body(content: Content) -> some View {
         content

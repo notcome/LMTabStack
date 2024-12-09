@@ -22,8 +22,6 @@ struct PageHostingFeature {
         var placement: PagePlacement
         var hidden: Bool
 
-        @ObservationStateIgnored
-        var transitionElementsMounted: Bool = false
         var pageAnchor: Anchor<CGRect>?
         var transitionElements: IdentifiedArrayOf<TransitionElementState> = []
 
@@ -123,7 +121,7 @@ struct PageHostingFeature {
             state.transitionValues.merge(newValues)
 
         case .syncTransitionElements(let summary):
-            state.transitionElementsMounted = true
+            guard summary.pageAnchor != nil else { break }
             state.pageAnchor = summary.pageAnchor
             for (id, anchor) in summary.elements {
                 if state.transitionElements[id: id] != nil {
@@ -139,6 +137,7 @@ struct PageHostingFeature {
             print("transition elements merged", state.transitionElements.ids.map(\.base))
 
         case .syncMorphingViewContents(let contents):
+            assert(state.transitionBehavior != nil)
             for content in contents {
                 if state.morphingViewContents[id: content.id] == nil {
                     state.morphingViewContents.append(content)
