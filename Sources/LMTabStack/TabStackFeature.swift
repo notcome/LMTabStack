@@ -19,6 +19,8 @@ struct TabStackFeature {
         @ObservationStateIgnored
         @EqualityIgnored
         var pageContents: IdentifiedArrayOf<ViewContent.Page> = []
+        @ObservationStateIgnored
+        var activePages: Set<AnyPageID> = []
 
         var loadedPages: IdentifiedArrayOf<PageHostingFeature.State> = []
 
@@ -105,6 +107,7 @@ struct TabStackFeature {
             for page in pageContents {
                 state.pageContents.append(page)
             }
+            state.activePages = Set(pageContents.ids)
 
         case let .loadedPages(.element(id: page, action: .transitionDidStart)):
             return state.transitionDidStart(for: page)
@@ -263,6 +266,7 @@ extension TabStackFeature.State {
     mutating func cleanUpTransition() {
         transitionProgress = nil
         transitionReportedStatus = .initial
+
         for id in loadedPages.ids {
             guard let transitionBehavior = loadedPages[id: id]!.transitionBehavior else { continue }
             loadedPages[id: id]!.cleanUpTransition()
@@ -280,5 +284,12 @@ extension TabStackFeature.State {
         transitionUpdateToken = 0
 
         logger.trace("Transition did complete")
+
+        loadedPages.removeAll { [activePages] in
+            !activePages.contains($0.id)
+        }
+        pageContents.removeAll { [activePages] in
+            !activePages.contains($0.id)
+        }
     }
 }

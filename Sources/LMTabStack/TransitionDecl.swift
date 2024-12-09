@@ -66,15 +66,17 @@ public struct MorphingViewGroup<Content: View>: View {
     }
 
     public var body: some View {
-        let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
-        if childStore != nil {
-            Section {
-                content
+        if store.transitionProgress != nil {
+            let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
+            if childStore != nil {
+                Section {
+                    content
+                }
+                .tag(id)
+                .environment(childStore)
+            } else {
+                fatalError("Non-existing page: \(id)")
             }
-            .tag(id)
-            .environment(childStore)
-        } else {
-            fatalError("Non-existing page: \(id)")
         }
     }
 }
