@@ -31,7 +31,7 @@ enum HomeChildPage: Hashable, CaseIterable {
 
 @Observable
 final class HomeModel {
-    var childPage: HomeChildPage? = .childA
+    var childPage: HomeChildPage?// = .childA
 }
 
 struct HomeChildButton: View {

@@ -95,12 +95,12 @@ private struct _PageHostingPureBackend: View {
         GeometryReader { proxy in
             ZStack {
                 content
+                    .safeAreaPadding(safeAreaInsets)
                     .frame(width: proxy.size.width, height: proxy.size.height)
                     .transformAnchorPreference(key: TransitionElementSummary.self, value: .bounds) { summary, pageAnchor in
                         summary.pageAnchor = pageAnchor
                     }
                     .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
-                    .safeAreaPadding(safeAreaInsets)
                     .modifier(store.transitionEffects ?? .init())
                     .zIndex(0)
 
