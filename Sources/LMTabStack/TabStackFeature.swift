@@ -25,9 +25,7 @@ struct TabStackFeature {
         case pages(IdentifiedActionOf<PageFeature>)
         case update(IdentifiedArrayOf<GeneratedPage>, TransitionResolver?)
 
-        case moveTransitionToEnd
-        case transitionStartDidCommit
-        case transitionEndDidCommit(TimeInterval)
+        case transitionDidCommit(token: Int, animationDuration: TimeInterval?)
         case transitionDidComplete
     }
 
@@ -40,108 +38,33 @@ struct TabStackFeature {
 
     private func reduceSelf(state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case .pages(.element(id: _, action: .delegate(.pageDidLoad))):
-            guard case .unresolved = state.transitionStage else { break }
-            state.resolveTransition()
+        case let .pages(.element(id: id, action: .delegate(action))):
+            return state.handle(page: id, delegateAction: action)
 
         case .pages:
             break
 
-        case let .update(pages, resolver):
+        case let .update(newPages, resolver):
             guard state.transitionStage == nil else {
-                state.pendingUpdate = pages
+                state.pendingUpdate = newPages
                 break
             }
 
             guard !state.pages.isEmpty, let resolver else {
-                for page in pages {
-                    let id = page.id
-                    if var current = state.pages[id: id] {
-                        current.content = page.content
-                        if let placement = page.placement {
-                            current.hidden = false
-                            current.placement = placement
-                        } else {
-                            current.hidden = true
-                        }
-                        state.pages[id: id] = current
-                    } else if let placement = page.placement {
-                        state.pages.append(.init(id: id, content: page.content, placement: placement))
-                    }
-                }
-                state.pages.removeAll { pages[id: $0.id] == nil }
+                state.update(to: newPages)
                 break
             }
 
-            let behaviors = state.apply(to: pages)
+            let behaviors = state.prepareForTransitions(newPages: newPages)
             guard !behaviors.isEmpty else { break }
-            state.transitionStage = .unresolved(.init(target: pages, resolver: resolver))
+            state.transitionStage = .unresolved(.init(target: newPages, resolver: resolver))
             state.resolveTransition()
 
-        case .moveTransitionToEnd:
-            guard case .resolved(var resolved) = state.transitionStage,
-                  case .automatic(var transition) = resolved.transition,
-                  transition.progress == .start
-            else { break }
-            transition.progress = .end
-            resolved.transition = .automatic(transition)
-            state.transitionStage = .resolved(resolved)
-
-        case .transitionStartDidCommit:
-            guard case .resolved(let resolved) = state.transitionStage else { fatalError() }
-            guard case .automatic(let transition) = resolved.transition,
-                  transition.progress == .start
-            else { break }
-            return .run { send in
-//                try? await Task.sleep(for: .milliseconds(1000))
-                await send(.moveTransitionToEnd)
-            }
-
-        case .transitionEndDidCommit(let t):
-            guard case .resolved(var resolved) = state.transitionStage else { fatalError() }
-            guard !resolved.sleepingForAnimation else { break }
-            resolved.sleepingForAnimation = true
-            state.transitionStage = .resolved(resolved)
-            let duration = Duration.milliseconds(round(t * 1000))
-            return .run { send in
-                do {
-                    try await Task.sleep(for: duration)
-                    await send(.transitionDidComplete)
-                } catch {
-                    logger.error("Transition animation task is cancelled.")
-                }
-            }
+        case let .transitionDidCommit(token: token, animationDuration: animationDuration):
+            return state.transitionDidCommit(token: token, animationDuration: animationDuration)
 
         case .transitionDidComplete:
-            guard case .resolved(let resolved) = state.transitionStage else { fatalError() }
-            state.transitionStage = nil
-
-            let finalTarget = state.pendingUpdate ?? resolved.target
-            state.pendingUpdate = nil
-
-            for newPage in finalTarget {
-                let id = newPage.id
-                guard var page = state.pages[id: id] else {
-                    precondition(newPage.placement == nil)
-                    continue
-                }
-                if let placement = newPage.placement {
-                    page.placement = placement
-                    page.hidden = false
-                } else {
-                    page.hidden = true
-                }
-                state.pages[id: id]! = page
-            }
-            for i in state.pages.indices {
-                guard state.pages[i].transition != nil else { continue }
-                state.pages[i].transition = nil
-                state.pages[i].transitionBehavior = nil
-            }
-
-            state.pages.removeAll {
-                resolved.target[id: $0.id] == nil
-            }
+            state.cleanUpTransition()
         }
         return .none
     }
@@ -157,7 +80,32 @@ func createTabStackStore() -> TabStackStore {
 }
 
 private extension TabStackFeature.State {
-    mutating func apply(to newPages: GeneratedPages) -> [AnyPageID: PageTransitionBehavior] {
+    mutating func update(to newPages: GeneratedPages) {
+        for i in pages.indices {
+            let id = pages[i].id
+            guard let newPage = newPages[id: id] else { continue }
+            pages[i].content = newPage.content
+
+            if let placement = newPage.placement {
+                pages[i].hidden = false
+                pages[i].placement = placement
+            } else {
+                pages[i].hidden = true
+            }
+        }
+
+        for newPage in newPages  {
+            let id = newPage.id
+            guard let placement = newPage.placement,
+                  pages[id: newPage.id] == nil
+            else { continue }
+            pages.append(.init(id: id, content: newPage.content, placement: placement))
+        }
+
+        pages.removeAll { newPages[id: $0.id] == nil }
+    }
+
+    mutating func prepareForTransitions(newPages: GeneratedPages) -> [AnyPageID: PageTransitionBehavior] {
         var behaviors: [AnyPageID: PageTransitionBehavior] = [:]
 
         for oldPage in pages {
@@ -214,7 +162,110 @@ private extension TabStackFeature.State {
         }
 
         for page in transitioningPages.transitioningPages {
-            pages[id: page.id]!.transition = .init(pageState: page, behavior: page.transitionBehavior!)
+            pages[id: page.id]!.transition = .init(
+                pageState: page,
+                behavior: page.transitionBehavior!)
         }
+    }
+
+    var resolvedTransition: TransitionResolvedState! {
+        get {
+            guard case .resolved(let state) = transitionStage else { return nil }
+            return state
+        }
+        set {
+            guard resolvedTransition != nil else { fatalError() }
+            transitionStage = .resolved(newValue)
+        }
+    }
+
+    mutating func handle(page id: AnyPageID, delegateAction action: PageFeature.DelegateAction) -> Effect<TabStackFeature.Action> {
+        switch action {
+        case .pageDidLoad:
+            guard case .unresolved = transitionStage else { break }
+            resolveTransition()
+
+        case .pageTransitionTokenDidUpdate:
+            guard resolvedTransition != nil else { break }
+            let target = resolvedTransition.committedTransitionToken
+            let allAligned = pages.allSatisfy { page in
+                guard let token = page.transition?.transitionToken else { return true }
+                let pageAligned = token == page.mountedLayout?.transitionToken
+                return pageAligned && token == target
+            }
+            guard allAligned else { break }
+
+            if resolvedTransition.waitingTarget == .waitingForStartToRender,
+               case .automatic(var transition) = resolvedTransition.transition
+            {
+                transition.progress = .end
+                resolvedTransition.transition = .automatic(transition)
+            }
+        }
+        return .none
+    }
+
+    mutating func transitionDidCommit(token: Int, animationDuration: TimeInterval?) -> Effect<TabStackFeature.Action> {
+        guard resolvedTransition != nil else { fatalError() }
+        // Check if we have already processed it.
+        guard token > (resolvedTransition.committedTransitionToken ?? -1) else { return .none }
+        resolvedTransition.committedTransitionToken = token
+
+        switch resolvedTransition.transition {
+        case .automatic(let t):
+            guard t.progress == .end else {
+                resolvedTransition.waitingTarget = .waitingForStartToRender
+                break
+            }
+
+            resolvedTransition.waitingTarget = .waitingForAnimation
+            let duration = Duration.milliseconds(round((animationDuration ?? 0) * 1000))
+            return .run { send in
+                do {
+                    try await Task.sleep(for: duration)
+                    await send(.transitionDidComplete)
+                } catch {
+                    logger.error("Transition animation task is cancelled.")
+                }
+            }
+
+        case .interactive:
+            fatalError("Unimplemented")
+        }
+
+        for i in pages.indices where pages[i].transition != nil {
+            pages[i].transition?.transitionToken = token
+        }
+        return .none
+    }
+
+    mutating func cleanUpTransition() {
+        defer {
+            pendingUpdate = nil
+            transitionStage = nil
+        }
+
+        let finalTarget = pendingUpdate ?? resolvedTransition.target
+
+        for newPage in finalTarget {
+            let id = newPage.id
+            guard var page = pages[id: id] else {
+                precondition(newPage.placement == nil)
+                continue
+            }
+            if let placement = newPage.placement {
+                page.placement = placement
+                page.hidden = false
+            } else {
+                page.hidden = true
+            }
+            pages[id: id]! = page
+        }
+        for i in pages.indices where pages[i].transition != nil {
+            pages[i].transition = nil
+            pages[i].transitionBehavior = nil
+        }
+
+        pages.removeAll { finalTarget[id: $0.id] == nil }
     }
 }

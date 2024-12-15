@@ -64,7 +64,7 @@ private struct Projection: Equatable {
                 send(id: id, action: .update(update))
             }
 
-            store.send(.transitionStartDidCommit)
+            store.send(.transitionDidCommit(token: transition.token, animationDuration: nil))
             return
         }
 
@@ -92,7 +92,7 @@ private struct Projection: Equatable {
                 send(id: id, action: .update(update), transaction: transaction)
             }
         }
-        store.send(.transitionEndDidCommit(animationDuration))
+        store.send(.transitionDidCommit(token: transition.token, animationDuration: animationDuration))
     }
 }
 

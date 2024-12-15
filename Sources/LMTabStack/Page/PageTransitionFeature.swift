@@ -44,6 +44,8 @@ struct PageTransitionFeature {
         var id: AnyPageID
         var frame: CGRect
 
+        var transitionToken: Int?
+
         var behavior: PageTransitionBehavior
         var contentEffects = TransitionEffects()
         var wrapperEffects = TransitionEffects()

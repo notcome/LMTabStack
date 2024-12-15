@@ -103,6 +103,15 @@ struct TransitionResolvedState: Equatable {
             }
         }
 
+        var token: Int {
+            switch self {
+            case .interactive(let t):
+                t.token
+            case .automatic(let t):
+                t.token
+            }
+        }
+
         var isComplete: Bool {
             switch self {
             case .interactive(let t):
@@ -116,7 +125,8 @@ struct TransitionResolvedState: Equatable {
     var transition: Transition
     var target: IdentifiedArrayOf<GeneratedPage>
 
-    var sleepingForAnimation = false
+    var committedTransitionToken: Int?
+    var waitingTarget: TransitionWaitingTarget?
 
     var progress: TransitionProgress {
         switch transition {
@@ -126,6 +136,11 @@ struct TransitionResolvedState: Equatable {
             t.progress
         }
     }
+}
+
+enum TransitionWaitingTarget: Equatable {
+    case waitingForStartToRender
+    case waitingForAnimation
 }
 
 enum TransitionStage: Equatable {

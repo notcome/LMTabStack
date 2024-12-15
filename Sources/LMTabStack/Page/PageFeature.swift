@@ -2,6 +2,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct PageMountedLayout: Equatable {
+    var transitionToken: Int?
     var pageFrame: CGRect
     var transitionElements: [AnyTransitionElementID: CGRect]
 }
@@ -47,6 +48,7 @@ struct PageFeature {
 
     enum DelegateAction {
         case pageDidLoad
+        case pageTransitionTokenDidUpdate
     }
 
     enum Action: BindableAction {
@@ -67,11 +69,18 @@ struct PageFeature {
         }
         .onChange(of: \.hasLoaded) { _, hasLoaded in
             Reduce { _, _ in
-                return if hasLoaded {
-                    .send(.delegate(.pageDidLoad))
-                } else {
-                    .none
+                if hasLoaded {
+                    return .send(.delegate(.pageDidLoad))
                 }
+                return .none
+            }
+        }
+        .onChange(of: \.mountedLayout?.transitionToken) { _, currentToken in
+            Reduce { _, _ in
+                if currentToken != nil {
+                    return .send(.delegate(.pageTransitionTokenDidUpdate))
+                }
+                return .none
             }
         }
     }

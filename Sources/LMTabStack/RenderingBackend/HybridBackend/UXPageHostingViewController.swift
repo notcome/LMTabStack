@@ -10,11 +10,12 @@ struct PageHostingRoot: View {
 
     var body: some View {
         let placement = store.resolvedPlacement
-
+        let transitionToken = store.transition?.transitionToken
         content
             .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
             .safeAreaPadding(placement.safeAreaInsets)
             .transformAnchorPreference(key: TransitionElementSummary.self, value: .bounds) { summary, pageAnchor in
+                summary.transitionToken = transitionToken
                 summary.pageAnchor = pageAnchor
             }
             .blur(radius: store.transition?.contentEffects.blurRadius ?? 0)
@@ -85,7 +86,6 @@ final class UXPageHostingViewController: UIViewController {
     func update(morphingViews: IdentifiedArrayOf<MorphingViewState>, transaction: Transaction) {
         for morphingView in morphingViews {
             let id = morphingView.id
-            let blurRadius = morphingView.effects.blurRadius ?? 0
 
             guard let wrapperView = morphingViewWrappers[id] else {
                 let wrapperView = UXAnimationView()
@@ -93,8 +93,6 @@ final class UXPageHostingViewController: UIViewController {
                 self.wrapperView.addSubview(wrapperView)
                 bindEdgesToSuperview(wrapperView)
                 wrapperView.layer.zPosition = morphingView.zIndex
-
-                print(id.base, "initial blur radius", blurRadius)
 
                 let rootView = MorphingViewHostingRoot(id: id, content: morphingView.content)
                 let hostingView = _UIHostingView(rootView: rootView)

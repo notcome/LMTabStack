@@ -77,6 +77,7 @@ struct PageHostingView: View {
     func convertToMountedLayout(summary: TransitionElementSummary, proxy: GeometryProxy) -> PageMountedLayout? {
         guard let pageAnchor = summary.pageAnchor else { return nil }
         return .init(
+            transitionToken: summary.transitionToken,
             pageFrame: proxy[pageAnchor],
             transitionElements: summary.elements.mapValues { proxy[$0] })
     }
