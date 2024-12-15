@@ -25,22 +25,24 @@ extension TransitionElementSummary: PreferenceKey {
 private struct TransitionElementModifier: ViewModifier {
     var id: AnyTransitionElementID
 
-    @Environment(PageHostingStore.self)
+    @Environment(PageStore.self)
     private var store
 
     @Environment(\.tabStackRenderingMode)
     private var renderingMode
 
     func body(content: Content) -> some View {
+        let effects = store.transition?.transitionElements[id: id]?.effects
+
         Color.clear
             .overlay {
-                let effects = store.transitionElements[id: id]?.transitionEffects
                 switch renderingMode {
                 case .pure:
                     content
                         .modifier(effects ?? .init())
                 case .hybrid:
                     TransitionElementHybridBackend(
+                        id: id,
                         content: AnyView(content),
                         effects: effects)
                 }
@@ -56,24 +58,30 @@ private struct TransitionElementModifier: ViewModifier {
 
 private struct TransitionElementHybridBackend: UIViewRepresentable {
     private struct Wrapper: View {
+        var id: AnyTransitionElementID
         var content: AnyView
-        var effects: TransitionEffects?
+
+        @Environment(PageStore.self)
+        private var store
+
 
         var body: some View {
+            let blurRadius = store.transition?.transitionElements[id: id]?.effects.blurRadius ?? 0
             content
-                .blur(radius: effects?.blurRadius ?? 0)
+                .blur(radius: blurRadius)
                 .ignoresSafeArea()
         }
     }
 
+    var id: AnyTransitionElementID
     var content: AnyView
     var effects: TransitionEffects?
 
-    func makeUIView(context: Context) -> _AnimatableView {
-        let wrapper = Wrapper(content: content, effects: effects)
+    func makeUIView(context: Context) -> UXAnimationView {
+        let wrapper = Wrapper(id: id, content: content)
         let hostingView = _UIHostingView(rootView: wrapper)
         hostingView.backgroundColor = .clear
-        let view = _AnimatableView()
+        let view = UXAnimationView()
         view.addSubview(hostingView)
 
         hostingView.translatesAutoresizingMaskIntoConstraints = false
@@ -87,15 +95,18 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ view: _AnimatableView, context: Context) {
+    func updateUIView(_ view: UXAnimationView, context: Context) {
         let hostingView = view.subviews[0] as! _UIHostingView<Wrapper>
 
         withTransaction(context.transaction) {
             hostingView.rootView.content = content
-            hostingView.rootView.effects = effects
         }
 
-        view.apply(effects: effects, transaction: context.transaction)
+        if let effects {
+            view.apply(effects: effects, transaction: context.transaction)
+        } else {
+            view.resetAllAnimations()
+        }
     }
 }
 

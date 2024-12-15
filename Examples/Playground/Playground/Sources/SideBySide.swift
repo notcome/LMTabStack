@@ -2,12 +2,35 @@ import ComposableArchitecture
 import LMTabStack
 import SwiftUI
 
-struct SideBySide: TransitionDefinition {
+struct SideBySide: AutomaticTransition {
     var childA: PageProxy
     var childB: PageProxy
     var childAToChildB: Bool
 
-    var gestureOffset: CGFloat
+    var unitOffset: CGFloat = 0
+    var progress: TransitionProgress {
+        get {
+            unitOffset == 1 ? .end : .start
+        }
+        set {
+            switch newValue {
+            case .start:
+                unitOffset = 0
+            case .end:
+                unitOffset = 1
+            }
+        }
+    }
+
+    var gestureOffset: CGFloat {
+        get {
+            if childAToChildB {
+                progress == .start ? 0 : -childA.frame.width
+            } else {
+                progress == .start ? 0 : childA.frame.width
+            }
+        }
+    }
 
     enum MorphingViewID: Hashable {
         case background
@@ -99,24 +122,17 @@ struct SideBySide: TransitionDefinition {
     }
 }
 
-struct SideBySideProvider: TransitionProvider {
-    func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
-        guard let childA = transitioningPages[id: AnyPageID(HomePageID.child(.childA))],
-              let childB = transitioningPages[id: AnyPageID(HomePageID.child(.childB))]
-        else { return .empty }
+func sideBySideProvider(_ transitioningPages: TransitioningPages) -> SideBySide {
+    let childA = transitioningPages[id: HomePageID.child(.childA)]!
+    let childB = transitioningPages[id: HomePageID.child(.childB)]!
 
-        var transition = SideBySide(childA: childA, childB: childB, childAToChildB: true, gestureOffset: 0)
-
-        switch (childA.behaivor, childB.behaivor) {
-        case (.disappear, .appear):
-            transition.childAToChildB = true
-            transition.gestureOffset = progress == .start ? 0 : -childA.frame.width
-        case (.appear, .disappear):
-            transition.childAToChildB = false
-            transition.gestureOffset = progress == .start ? 0 : childA.frame.width
-        default:
-            return .empty
-        }
-        return transition
+    let childAToChildB = switch childA.behavior {
+    case .appear:
+        false
+    case .disappear:
+        true
+    default:
+        fatalError()
     }
+    return SideBySide(childA: childA, childB: childB, childAToChildB: childAToChildB)
 }

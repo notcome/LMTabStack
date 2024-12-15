@@ -7,20 +7,14 @@ public struct TabStackTabItem<Tab: Hashable>: Identifiable {
 }
 
 private struct PlacementView: View {
-    var pages: IdentifiedArrayOf<ViewContent.Page>
     @Environment(TabStackStore.self)
     private var store
 
     var body: some View {
         GeometryReader { proxy in
-            let _ = print(store.loadedPages.map(\.id.base))
-
-            ForEach(store.loadedPages) { loadedPage in
-                let id = loadedPage.id
-
-                if let pageContent = pages[id: id] ?? store.pageContents[id: id] {
-                    pageContent.content.zIndex(loadedPage.placement.zIndex)
-                }
+            ForEach(store.pages) { page in
+                page.content
+                    .zIndex(page.resolvedPlacement.zIndex)
             }
         }
     }
@@ -45,23 +39,16 @@ public struct TabStackView<Tab: Hashable & Sendable, Content: View>: View {
     }
 
     public var body: some View {
-        Group(sections: content) { sections in
-            let viewContent = ViewContent.from(sections, selectedTab: selection)
-            let pages = viewContent.pages
-
-            PlacementView(pages: pages)
-                .ignoresSafeArea()
-                .background {
-                    TabStackLayoutView(input: .from(viewContent))
-                        .equatable()
-
-                    TransitionGenerator()
+        PlacementView()
+            .background {
+                Group(sections: content) { sections in
+                    PageGenerator(viewContent: .from(sections, selectedTab: selection))
                 }
-                .onChange(of: Set(pages.ids), initial: true) {
-                    store.send(.sync(.pageContents(pages)))
-                }
-        }
-        .environment(store)
+            }
+            .background {
+                TransitionGenerator()
+            }
+            .environment(store)
     }
 }
 
@@ -93,7 +80,7 @@ public enum PageVisiblity {
 
 extension EnvironmentValues {
     @Entry
-    public var tabStackRenderingMode: TabStackRenderingMode = .hybrid
+    public var tabStackRenderingMode: TabStackRenderingMode = .pure
 
     @Entry
     public var pageVisiblity: PageVisiblity = .visible

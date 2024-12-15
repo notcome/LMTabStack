@@ -2,18 +2,19 @@ import ComposableArchitecture
 import LMTabStack
 import SwiftUI
 
-struct HomeToChild: TransitionDefinition {
+struct HomeToChild: AutomaticTransition {
     var home: PageProxy
     var child: PageProxy
     var tabBar: PageProxy
     var rootToChild: Bool
-    var progress: TransitionProgress
+
+    var progress: TransitionProgress = .start
 
     var childID: HomeChildPage
     var childA: TransitionElementProxy
     var childB: TransitionElementProxy
 
-    init?(home: PageProxy, child: PageProxy, tabBar: PageProxy, rootToChild: Bool, progress: TransitionProgress) {
+    init?(home: PageProxy, child: PageProxy, tabBar: PageProxy, rootToChild: Bool) {
         guard let childA = home.transitionElement(HomeChildPage.childA),
               let childB = home.transitionElement(HomeChildPage.childB)
         else {
@@ -25,7 +26,6 @@ struct HomeToChild: TransitionDefinition {
         self.child = child
         self.tabBar = tabBar
         self.rootToChild = rootToChild
-        self.progress = progress
 
         switch child.id.base as! HomePageID {
         case .child(let childID):
@@ -57,7 +57,7 @@ struct HomeToChild: TransitionDefinition {
         }
 
         var body: some View {
-            RoundedRectangle(cornerRadius: atStart ? 30 : 24)
+            RoundedRectangle(cornerRadius: atStart ? 30 : 55)
                 .foregroundStyle(childID == .childA ? .yellow : .blue)
                 .frame(
                     width: atStart ? cardSize.width : finalSize.width,
@@ -78,7 +78,7 @@ struct HomeToChild: TransitionDefinition {
                 }
                 MorphingCardBackground(
                     childID: childID,
-                    cardSize: home[cardOpened].size,
+                    cardSize: cardOpened.frame.size,
                     finalSize: child.frame.size,
                     rootToChild: rootToChild)
             }
@@ -90,12 +90,12 @@ struct HomeToChild: TransitionDefinition {
         }
     }
 
+    @ViewBuilder
     func transitions(morphingViews: MorphingViewsProxy) -> some View {
-        let _ = print("at start", rootToChild == (progress == .start), rootToChild, progress)
         let atStart = rootToChild == (progress == .start)
 
         // Opacity
-        Track(timing: .easeOut(duration: 0.5)) {
+        Track(timing: .easeOut(duration: 2)) {
             child.contentView
                 .transitionOpacity(atStart ? 0 : 1)
                 .transitionBlurRadius(atStart ? 10 : 0)
@@ -108,8 +108,7 @@ struct HomeToChild: TransitionDefinition {
         }
 
         // Movement
-        Track(timing: .spring(duration: 0.5, bounce: 0)) {
-            let _ = print("track movement tab bar dy=", atStart ? 0 : 144)
+        Track(timing: .spring(duration: 2, bounce: 0)) {
             tabBar.contentView
                 .transitionOffset(y: atStart ? 0 : 144)
 
@@ -148,7 +147,7 @@ struct HomeToChild: TransitionDefinition {
         var wrapperOffset: CGPoint {
             guard atStart else { return .zero }
 
-            let cardFrame = child[childOpened]
+            let cardFrame = childOpened.frame
             let sx = cardFrame.midX
             let sy = cardFrame.midY
             let ex = child.frame.midX
@@ -161,62 +160,32 @@ struct HomeToChild: TransitionDefinition {
             return childID == .childA ? 1000 : -1000
         }
 
-
         var body: some View {
             // move frame card center to page center
             child.wrapperView
                 .transitionOffset(wrapperOffset)
 
             childOpened.transitionOpacity(0)
-            otherChild.transitionOffset(x: otherChildXOffset)
+            otherChild
+//                .transitionOffset(x: otherChildXOffset)
+                .transitionBlurRadius(atStart ? 0 : 10)
         }
     }
 }
 
-struct RootToChildProvider: TransitionProvider {
-    func transitions(for transitioningPages: IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
-        print("request transition with progress", progress)
-        var tabBar: PageProxy?
-        var pages: [HomePageID: PageProxy] = [:]
+func rootToChildProvider(_ transitioningPages: TransitioningPages) -> HomeToChild {
+    let tabBar = transitioningPages[id: AppTabBarPageID()]!
+    let home = transitioningPages[id: HomePageID.root]!
+    let childA = transitioningPages[id: HomePageID.child(.childA)]
+    let childB = transitioningPages[id: HomePageID.child(.childB)]
 
-        for page in transitioningPages {
-            if page.id == AnyPageID(AppTabBarPageID()) {
-                tabBar = page
-                continue
-            }
+    let child: PageProxy = (childA ?? childB)!
 
-            if let id = page.id.base as? HomePageID {
-                pages[id] = page
-            }
-        }
-
-        guard pages.count == 2 else {
-            print("Empty because we don't have two pages. Found", Array(pages.keys))
-            return .empty
-        }
-        if let root = pages[.root] {
-            let child = (pages[.child(.childA)] ?? pages[.child(.childB)])!
-
-            let rootToChild = if case .disappear = root.behaivor {
-                true
-            } else {
-                false
-            }
-
-            guard let transition = HomeToChild(
-                home: root,
-                child: child,
-                tabBar: tabBar!,
-                rootToChild: rootToChild,
-                progress: progress)
-            else { return .empty }
-
-            print("request transition with progress", progress, "actually non-empty")
-
-            return transition
-        }
-
-        print("Empty because no root")
-        return .empty
+    let rootToChild = if case .disappear = home.behavior {
+        true
+    } else {
+        false
     }
+
+    return HomeToChild(home: home, child: child, tabBar: tabBar, rootToChild: rootToChild)!
 }

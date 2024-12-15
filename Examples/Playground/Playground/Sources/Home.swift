@@ -31,6 +31,7 @@ enum HomeChildPage: Hashable, CaseIterable {
 
 @Observable
 final class HomeModel {
+    var dummy: Bool = false
     var childPage: HomeChildPage?// = .childA
 }
 
@@ -68,11 +69,11 @@ struct HomeChildButton: View {
             .onTapGesture {
                 switch action {
                 case .close:
-                    withTransitionProvider(RootToChildProvider()) {
+                    withTransitionProvider(rootToChildProvider) {
                         handleAction()
                     }
                 default:
-                    withTransitionProvider(SideBySideProvider()) {
+                    withTransitionProvider(sideBySideProvider) {
                         handleAction()
                     }
                 }
@@ -108,7 +109,7 @@ struct HomeChildView: View {
                 HomeChildButton(action: page == .childA ? .toB : .toA)
                     .padding(36)
             }
-            .withHomeChildSwitchingGesture(current: page)
+//            .withHomeChildSwitchingGesture(current: page)
     }
 }
 
@@ -117,25 +118,43 @@ struct HomeView: View {
     private var model
 
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(HomeChildPage.allCases, id: \.self) { page in
-                RoundedRectangle(cornerRadius: 30)
-                    .foregroundStyle(page.color)
-                    .overlay {
-                        Text(page.title)
-                    }
-                    .transitionElement(id: page)
-                    .frame(height: 120)
-                    .frame(maxWidth: 240)
-                    .onTapGesture {
-                        guard model.childPage != page else { return}
-                        withTransitionProvider(RootToChildProvider()) {
-                            model.childPage = page
+        VStack {
+            HStack(spacing: 10) {
+                ForEach(HomeChildPage.allCases, id: \.self) { page in
+                    RoundedRectangle(cornerRadius: 30)
+                        .foregroundStyle(page.color)
+                        .overlay {
+                            Text(page.title)
                         }
-                    }
+                        .transitionElement(id: page)
+                        .frame(height: 120)
+                        .frame(maxWidth: 240)
+                        .onTapGesture {
+                            guard model.childPage != page else { return}
+                            withTransitionProvider(rootToChildProvider) {
+                                model.childPage = page
+                            }
+                        }
+                }
             }
+            .padding(.horizontal, 30)
+
+            Rectangle()
+                .overlay {
+                    Rectangle()
+                        .foregroundStyle(.black)
+                        .frame(width: model.dummy ? 100 : 200, height: 50)
+                }
+                .foregroundStyle(.green)
+                .onTapGesture {
+                    withAnimation(.default) {
+                        model.dummy.toggle()
+                    }
+                }
+                .transitionElement(id: "Test")
+                .frame(width: 300, height: 100)
+
         }
-        .padding(.horizontal, 30)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
     }

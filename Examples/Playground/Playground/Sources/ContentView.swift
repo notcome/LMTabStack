@@ -47,9 +47,9 @@ struct ContentView: View {
         .withBorder()
         .environment(model)
         .tabStackLayout(FullScreenTabStackLayout(model: model))
+        .environment(\.tabStackRenderingMode, .pure)
     }
 }
-
 
 struct FullScreenTabStackLayout: TabStackLayout {
     var model: AppModel
@@ -120,7 +120,6 @@ extension View {
         modifier(PageBackgroundModifier(style: style, hidesInTransition: hidesInTransition))
     }
 }
-
 
 #Preview {
     ContentView()

@@ -7,9 +7,13 @@ public protocol PageTransitionKey {
 }
 
 @ObservableState
-public struct PageTransitionValues: Equatable, Sendable {
+public struct PageTransitionValues: Equatable, Sendable, CustomStringConvertible {
     @ObservationStateIgnored
     var dict: [ObjectIdentifier: AnySendableEquatable] = [:]
+
+    public var description: String {
+        dict.description
+    }
 
     private subscript(key: ObjectIdentifier) -> AnySendableEquatable? {
         get {
@@ -29,11 +33,7 @@ public struct PageTransitionValues: Equatable, Sendable {
             return value.base as! K.Value
         }
         set {
-            if newValue == K.defaultValue {
-                self[ObjectIdentifier(type)] = nil
-            } else {
-                self[ObjectIdentifier(type)] = AnySendableEquatable(base: newValue)
-            }
+            self[ObjectIdentifier(type)] = AnySendableEquatable(base: newValue)
         }
     }
 
@@ -53,13 +53,14 @@ public struct PageTransitionValues: Equatable, Sendable {
 @MainActor
 @propertyWrapper
 public struct PageTransition<Value>: DynamicProperty {
-    @Environment(PageHostingStore.self)
+    @Environment(PageStore.self)
     private var store
 
     private var keyPath: KeyPath<PageTransitionValues, Value>
 
     public var wrappedValue: Value {
-        store.transitionValues[keyPath: keyPath]
+        let values = store.transition?.transitionValues ?? PageTransitionValues()
+        return values[keyPath: keyPath]
     }
 
     public init(_ keyPath: KeyPath<PageTransitionValues, Value>) {

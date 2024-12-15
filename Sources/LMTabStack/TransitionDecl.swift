@@ -1,47 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
 
-public protocol TransitionDefinition {
-    associatedtype MorphingViews: View
-    associatedtype Transitions: View
-
-    @ViewBuilder
-    var morphingViews: MorphingViews { get }
-
-    @ViewBuilder
-    func transitions(morphingViews: MorphingViewsProxy) -> Transitions
-}
-
-public struct EmptyTransitionDefinition: TransitionDefinition {
-    public init() {}
-
-    public func transitions(morphingViews: MorphingViewsProxy) -> some View {
-        EmptyView()
-    }
-}
-
-extension TransitionDefinition where Self == EmptyTransitionDefinition {
-    public static var empty: EmptyTransitionDefinition {
-        EmptyTransitionDefinition()
-    }
-}
-
-extension TransitionDefinition {
-    public var morphingViews: EmptyView {
-        EmptyView()
-    }
-}
-
-extension TransitionDefinition {
-    var erasedMorphingViews: AnyView {
-        AnyView(morphingViews)
-    }
-
-    func erasedTransitions(morphingViews: MorphingViewsProxy) -> AnyView {
-        AnyView(transitions(morphingViews: morphingViews))
-    }
-}
-
 public struct MorphingViewGroup<Content: View>: View {
     public var id: AnyPageID
     public var content: Content
@@ -66,8 +25,8 @@ public struct MorphingViewGroup<Content: View>: View {
     }
 
     public var body: some View {
-        if store.transitionProgress != nil {
-            let childStore = store.scope(state: \.loadedPages[id: id], action: \.loadedPages[id: id]) as PageHostingStore?
+        if store.transitionStage != nil {
+            let childStore = store.scope(state: \.pages[id: id], action: \.pages[id: id]) as PageStore?
             if childStore != nil {
                 Section {
                     content
@@ -129,8 +88,9 @@ public struct MorphingViewsProxy {
     }
 }
 
-struct MorphingViewContent: Identifiable {
+struct MorphingViewContent: Identifiable, Equatable {
     var id: AnyMorphingViewID
+    @EqualityIgnored
     var content: AnyView
     var zIndex: Double?
 }

@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+/*
 @MainActor
 final class BoxedTransitionProvider<Definition: TransitionDefinition>: TransitionProvider {
     weak var store: TabStackStore?
@@ -13,7 +14,7 @@ final class BoxedTransitionProvider<Definition: TransitionDefinition>: Transitio
         self.provideTransition = provideTransition
     }
 
-    func transitions(for transitioningPages: IdentifiedCollections.IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> any TransitionDefinition {
+    func transitions(for transitioningPages: IdentifiedCollections.IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> (any TransitionDefinition) {
         if let definition {
             return definition
         }
@@ -39,7 +40,7 @@ final class BoxedTransitionProvider<Definition: TransitionDefinition>: Transitio
 
 @MainActor
 @propertyWrapper
-public struct InteractiveTransition<Definition: TransitionDefinition>: DynamicProperty {
+public struct TransitionInteraction<Definition: TransitionDefinition>: DynamicProperty {
     @Environment(TabStackStore.self)
     private var store
 
@@ -95,3 +96,4 @@ public struct InteractiveTransition<Definition: TransitionDefinition>: DynamicPr
         withTransaction(transaction, updateState)
     }
 }
+*/
