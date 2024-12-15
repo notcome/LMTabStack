@@ -161,10 +161,10 @@ private extension TabStackFeature.State {
             transitionStage = .resolved(.init(transition: .interactive(transition), target: state.target))
         }
 
-        for page in transitioningPages.transitioningPages {
+        for page in transitioningPages {
             pages[id: page.id]!.transition = .init(
-                pageState: page,
-                behavior: page.transitionBehavior!)
+                pageState: page.state,
+                behavior: page.behavior)
         }
     }
 

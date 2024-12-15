@@ -2,7 +2,7 @@ import ComposableArchitecture
 import SwiftUI
 
 public struct TransitioningPages {
-    var transitioningPages: IdentifiedArrayOf<PageFeature.State>
+    private var transitioningPages: IdentifiedArrayOf<PageFeature.State>
 
     init?(pages: IdentifiedArrayOf<PageFeature.State>) {
         transitioningPages = pages.filter { $0.transitionBehavior != nil }
@@ -16,6 +16,24 @@ public struct TransitioningPages {
 
     public subscript(id: AnyPageID) -> PageProxy? {
         transitioningPages[id: id].map(PageProxy.init(state:))
+    }
+}
+
+extension TransitioningPages: Collection {
+    public var startIndex: Int {
+        transitioningPages.startIndex
+    }
+
+    public var endIndex: Int {
+        transitioningPages.endIndex
+    }
+
+    public func index(after i: Int) -> Int {
+        transitioningPages.index(after: i)
+    }
+
+    public subscript(position: Int) -> PageProxy {
+        PageProxy(state: transitioningPages[position])
     }
 }
 
@@ -62,7 +80,6 @@ extension TransitionElementProxy: View {
         ViewRefView(ref: .transitionElement(id))
     }
 }
-
 
 enum TransitionResolver {
     case automatic((TransitioningPages) -> AnyAutomaticTransition)

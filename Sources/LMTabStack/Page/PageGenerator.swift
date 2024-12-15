@@ -20,7 +20,20 @@ struct PageGenerator: View {
 
             Color.clear
                 .onChangeWithTransaction(of: layoutPages) { layout, tx in
-                    store.send(.update(.init(uniqueElements: pages), tx.transitionProvider.map(TransitionResolver.automatic)))
+                    var automaticProvider: AutomaticTransitionProvider?
+                    if let provider = tx.transitionProvider {
+                        automaticProvider = provider
+                    } else if tx.enableAutomaticTransition {
+                        automaticProvider = { pages in
+                            let resolver = viewContent.automaticTransitionResolver
+                            guard let t = resolver.resolve(transitioningPages: pages) else {
+                                return .init(EmptyTransition(progress: .start))
+                            }
+                            return t
+                        }
+                    }
+
+                    store.send(.update(.init(uniqueElements: pages), automaticProvider.map(TransitionResolver.automatic)))
                 }
         }
     }

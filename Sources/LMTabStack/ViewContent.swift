@@ -16,10 +16,16 @@ struct ViewContent {
         var id: AnyPageID
         var content: AnyView
         var layoutValues: PageLayoutValues
+
+        var automaticTransitionResolverNodes: [any AutomaticTransitionResolverNode]
     }
 
     var pages: IdentifiedArrayOf<Page> {
         tabs.reduce(into: decorations) { $0 += $1.pages }
+    }
+
+    var automaticTransitionResolver: AutomaticTransitionResolver {
+        .init(nodes: pages.reduce(into: []) { $0 += $1.automaticTransitionResolverNodes })
     }
 
     static func from(_ content: SectionCollection, selectedTab: some Hashable & Sendable) -> Self {
@@ -32,10 +38,17 @@ struct ViewContent {
                     assertionFailure("Each page in a TabStackView should be wrapped by a Page.")
                     return nil
                 }
+                let layoutValues = subview.containerValues.pageLayoutValues
+                let automaticTransitionResolverNodes = subview.containerValues
+                    .pageSpecificAutomaticTransitionResolver
+                    .nodes
+                    .map { f in f(id) }
+
                 return .init(
                     id: id,
                     content: AnyView(subview),
-                    layoutValues: subview.containerValues.pageLayoutValues)
+                    layoutValues: layoutValues,
+                    automaticTransitionResolverNodes: automaticTransitionResolverNodes)
             }
 
             guard let id = section.containerValues.tag(for: AnyTabID.self) else {

@@ -95,7 +95,7 @@ struct HomeToChild: AutomaticTransition {
         let atStart = rootToChild == (progress == .start)
 
         // Opacity
-        Track(timing: .easeOut(duration: 2)) {
+        Track(timing: .easeOut) {
             child.contentView
                 .transitionOpacity(atStart ? 0 : 1)
                 .transitionBlurRadius(atStart ? 10 : 0)
@@ -108,7 +108,7 @@ struct HomeToChild: AutomaticTransition {
         }
 
         // Movement
-        Track(timing: .spring(duration: 2, bounce: 0)) {
+        Track(timing: .spring) {
             tabBar.contentView
                 .transitionOffset(y: atStart ? 0 : 144)
 
@@ -167,7 +167,7 @@ struct HomeToChild: AutomaticTransition {
 
             childOpened.transitionOpacity(0)
             otherChild
-//                .transitionOffset(x: otherChildXOffset)
+                .transitionOffset(x: otherChildXOffset)
                 .transitionBlurRadius(atStart ? 0 : 10)
         }
     }
@@ -181,11 +181,5 @@ func rootToChildProvider(_ transitioningPages: TransitioningPages) -> HomeToChil
 
     let child: PageProxy = (childA ?? childB)!
 
-    let rootToChild = if case .disappear = home.behavior {
-        true
-    } else {
-        false
-    }
-
-    return HomeToChild(home: home, child: child, tabBar: tabBar, rootToChild: rootToChild)!
+    return HomeToChild(home: home, child: child, tabBar: tabBar, rootToChild: home.behavior.isDisappearing)!
 }

@@ -67,16 +67,7 @@ struct HomeChildButton: View {
                     .foregroundStyle(.white)
             }
             .onTapGesture {
-                switch action {
-                case .close:
-                    withTransitionProvider(rootToChildProvider) {
-                        handleAction()
-                    }
-                default:
-                    withTransitionProvider(sideBySideProvider) {
-                        handleAction()
-                    }
-                }
+                handleAction()
             }
     }
 
@@ -131,9 +122,7 @@ struct HomeView: View {
                         .frame(maxWidth: 240)
                         .onTapGesture {
                             guard model.childPage != page else { return}
-                            withTransitionProvider(rootToChildProvider) {
-                                model.childPage = page
-                            }
+                            model.childPage = page
                         }
                 }
             }
@@ -173,10 +162,25 @@ struct HomeStack: View {
             Page(id: HomePageID.root) {
                 HomeView()
             }
+            .automaticTransition(to: HomePageID.child(.childA)) { home, child, pages in
+                let tabBar = pages[id: AppTabBarPageID()]!
+                return HomeToChild(home: home, child: child, tabBar: tabBar, rootToChild: home.behavior.isDisappearing)!
+            }
+            .automaticTransition(to: HomePageID.child(.childB)) { home, child, pages in
+                let tabBar = pages[id: AppTabBarPageID()]!
+                return HomeToChild(home: home, child: child, tabBar: tabBar, rootToChild: home.behavior.isDisappearing)!
+            }
 
             if let childPage = model.childPage {
+                let otherChild: HomeChildPage = childPage == .childA ? .childB : .childA
+
                 Page(id: HomePageID.child(childPage)) {
                     HomeChildView(page: childPage)
+                }
+                .automaticTransition(to: HomePageID.child(otherChild)) { _, _, pages in
+                    let childA = pages[id: HomePageID.child(.childA)]!
+                    let childB = pages[id: HomePageID.child(.childB)]!
+                    return SideBySide(childA: childA, childB: childB, childAToChildB: childA.behavior.isDisappearing)
                 }
             }
         }

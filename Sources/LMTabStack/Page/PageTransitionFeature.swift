@@ -5,6 +5,16 @@ public enum PageTransitionBehavior: Equatable {
     case appear(PagePlacement)
     case disappear(PagePlacement)
     case change(PagePlacement, PagePlacement)
+
+    public var isAppearing: Bool {
+        guard case .appear = self else { return false }
+        return true
+    }
+
+    public var isDisappearing: Bool {
+        guard case .disappear = self else { return false }
+        return true
+    }
 }
 
 @ObservableState

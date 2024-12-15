@@ -121,18 +121,3 @@ struct SideBySide: AutomaticTransition {
         }
     }
 }
-
-func sideBySideProvider(_ transitioningPages: TransitioningPages) -> SideBySide {
-    let childA = transitioningPages[id: HomePageID.child(.childA)]!
-    let childB = transitioningPages[id: HomePageID.child(.childB)]!
-
-    let childAToChildB = switch childA.behavior {
-    case .appear:
-        false
-    case .disappear:
-        true
-    default:
-        fatalError()
-    }
-    return SideBySide(childA: childA, childB: childB, childAToChildB: childAToChildB)
-}

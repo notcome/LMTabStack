@@ -39,20 +39,12 @@ public extension View {
 
 typealias AutomaticTransitionProvider = (TransitioningPages) -> AnyAutomaticTransition
 
-//enum InteractiveTransitionProgress: Equatable {
-//    case start
-//    case end
-//}
-
 extension Transaction {
     @Entry
     var transitionProvider: AutomaticTransitionProvider?
-//    @Entry
-//    var interactiveTransitionProgress: InteractiveTransitionProgress?
-//
-//    public var isInteractiveTransition: Bool {
-//        interactiveTransitionProgress != nil
-//    }
+
+    @Entry
+    var enableAutomaticTransition: Bool = true
 }
 
 public func withTransitionProvider<T: AutomaticTransition>(
@@ -128,4 +120,12 @@ public struct Track<Content: View>: View {
 extension Transaction {
     @Entry
     var transitionAnimation: TransitionAnimation?
+}
+
+struct EmptyTransition: AutomaticTransition {
+    var progress: TransitionProgress
+
+    func transitions(morphingViews: MorphingViewsProxy) -> some View {
+        EmptyView()
+    }
 }
