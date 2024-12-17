@@ -2,15 +2,36 @@ import SwiftUI
 
 extension View {
     public func automaticTransition(
-        to targetID: some Hashable & Sendable,
+        targetPredicate: @escaping (AnyPageID) -> Bool,
         resolve: @escaping (PageProxy, PageProxy, TransitioningPages) -> (some AutomaticTransition)?
     ) -> some View {
         containerValue(\.pageSpecificAutomaticTransitionResolver.lastNode) { sourceID in
             AutomaticTransitionPageToPageResolverNode(
                 sourceID: sourceID,
-                targetID: AnyPageID(targetID),
+                targetPredicate: targetPredicate,
                 resolve: resolve)
         }
+    }
+
+    public func automaticTransition<Target: Hashable & Sendable>(
+        to targetType: Target.Type = Target.self,
+        predicate: @escaping (Target) -> Bool = { _ in true },
+        resolve: @escaping (PageProxy, PageProxy, TransitioningPages) -> (some AutomaticTransition)?
+    ) -> some View {
+        automaticTransition(targetPredicate: { id in
+            guard let id = id.base as? Target else { return false }
+            return predicate(id)
+        }, resolve: resolve)
+    }
+
+    public func automaticTransition(
+        to targetID: some Hashable & Sendable,
+        resolve: @escaping (PageProxy, PageProxy, TransitioningPages) -> (some AutomaticTransition)?
+    ) -> some View {
+        automaticTransition(
+            to: type(of: targetID),
+            predicate: { $0 == targetID },
+            resolve: resolve)
     }
 }
 
@@ -71,16 +92,16 @@ protocol AutomaticTransitionResolverNode {
 
 struct AutomaticTransitionPageToPageResolverNode: AutomaticTransitionResolverNode {
     var sourceID: AnyPageID
-    var targetID: AnyPageID
+    var targetPredicate: (AnyPageID) -> Bool
     var body: (PageProxy, PageProxy, TransitioningPages) -> AnyAutomaticTransition?
 
     init(
         sourceID: AnyPageID,
-        targetID: AnyPageID,
+        targetPredicate: @escaping (AnyPageID) -> Bool,
         resolve: @escaping (PageProxy, PageProxy, TransitioningPages) -> (some AutomaticTransition)?
     ) {
         self.sourceID = sourceID
-        self.targetID = targetID
+        self.targetPredicate = targetPredicate
         body = { sourcePage, targetPage, allPages in
             guard let transition = resolve(sourcePage, targetPage, allPages) else { return nil }
             return .init(transition)
@@ -92,12 +113,11 @@ struct AutomaticTransitionPageToPageResolverNode: AutomaticTransitionResolverNod
         var targetPage: PageProxy?
 
         let baseCondition = transitioningPages.allSatisfy { page in
-            switch page.id {
-            case sourceID:
+            if page.id == sourceID {
                 sourcePage = page
-            case targetID:
+            } else if targetPredicate(page.id) {
                 targetPage = page
-            default:
+            } else {
                 // We might want to think twice about this.
                 // Maybe we only allow appearing/disappearing of decoration views.
                 return true
@@ -113,7 +133,7 @@ struct AutomaticTransitionPageToPageResolverNode: AutomaticTransitionResolverNod
 
     func resolve(transitioningPages: TransitioningPages) -> AnyAutomaticTransition? {
         let sourcePage = transitioningPages[sourceID]!
-        let targetPage = transitioningPages[targetID]!
+        let targetPage = transitioningPages.first { targetPredicate($0.id) }!
         return body(sourcePage, targetPage, transitioningPages)
     }
 }
