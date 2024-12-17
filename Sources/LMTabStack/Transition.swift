@@ -37,11 +37,9 @@ public extension View {
     }
 }
 
-typealias AutomaticTransitionProvider = (TransitioningPages) -> AnyAutomaticTransition
-
 extension Transaction {
     @Entry
-    var transitionProvider: AutomaticTransitionProvider?
+    var transitionResolver: TransitionResolver?
 
     @Entry
     var enableAutomaticTransition: Bool = true
@@ -52,7 +50,7 @@ public func withTransitionProvider<T: AutomaticTransition>(
     action: () -> Void
 ) {
     var transaction = Transaction()
-    transaction.transitionProvider = { pages in
+    transaction.transitionResolver = .automatic { pages in
         let transition = provider(pages)
         return AnyAutomaticTransition(transition)
     }

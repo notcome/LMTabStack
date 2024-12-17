@@ -47,7 +47,7 @@ struct ContentView: View {
         .withBorder()
         .environment(model)
         .tabStackLayout(FullScreenTabStackLayout(model: model))
-        .environment(\.tabStackRenderingMode, .pure)
+        .environment(\.tabStackRenderingMode, .hybrid)
     }
 }
 

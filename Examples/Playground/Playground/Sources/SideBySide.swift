@@ -2,7 +2,7 @@ import ComposableArchitecture
 import LMTabStack
 import SwiftUI
 
-struct SideBySide: AutomaticTransition {
+struct SideBySide: AutomaticTransition, InteractiveTransition {
     var childA: PageProxy
     var childB: PageProxy
     var childAToChildB: Bool
@@ -25,12 +25,21 @@ struct SideBySide: AutomaticTransition {
     var gestureOffset: CGFloat {
         get {
             if childAToChildB {
-                progress == .start ? 0 : -childA.frame.width
+                unitOffset * -childA.frame.width
             } else {
-                progress == .start ? 0 : childA.frame.width
+                unitOffset * childA.frame.width
+            }
+        }
+        set {
+            if childAToChildB {
+                unitOffset = newValue / -childA.frame.width
+            } else {
+                unitOffset = newValue / childA.frame.width
             }
         }
     }
+
+    var isComplete: Bool = false
 
     enum MorphingViewID: Hashable {
         case background

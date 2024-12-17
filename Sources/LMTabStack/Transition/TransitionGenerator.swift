@@ -60,8 +60,11 @@ private struct Projection: Equatable {
                 }
             }
 
+            var transaction = Transaction()
+            transaction.tracksVelocity = transition.isInteractive
+
             for (id, update) in updates {
-                send(id: id, action: .update(update))
+                send(id: id, action: .update(update), transaction: transaction)
             }
 
             store.send(.transitionDidCommit(token: transition.token, animationDuration: nil))

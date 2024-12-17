@@ -37,22 +37,24 @@ final class BoxedTransitionProvider<Definition: TransitionDefinition>: Transitio
         store?.send(.refreshTransition)
     }
 }
+ */
 
 @MainActor
 @propertyWrapper
-public struct TransitionInteraction<Definition: TransitionDefinition>: DynamicProperty {
+public struct TransitionInteraction<Transition: InteractiveTransition>: DynamicProperty {
     @Environment(TabStackStore.self)
     private var store
 
     public init() {}
 
-    public var wrappedValue: Definition? {
-        guard let box = store.transitionProvider as? BoxedTransitionProvider<Definition>
+    public var wrappedValue: Transition? {
+        guard case .resolved(let resolved) = store.transitionStage,
+              case .interactive(let untyped) = resolved.transition,
+              let transition = untyped.base as? Transition
         else {
-            print("Unexpected transition provider", type(of: store.transitionProvider))
             return nil
         }
-        return box.definition
+        return transition
     }
 
     public var projectedValue: Self {
@@ -66,34 +68,32 @@ public struct TransitionInteraction<Definition: TransitionDefinition>: DynamicPr
 
     public func startInteractiveTransition(
         updateState: () -> Void,
-        provideTransition: @escaping (IdentifiedArrayOf<PageProxy>) -> Definition
+        provideTransition: @escaping (TransitioningPages) -> Transition
     ) {
-        let box = BoxedTransitionProvider(store: store, provideTransition: provideTransition)
         var transaction = Transaction()
-        transaction.interactiveTransitionProgress = .start
-        transaction.transitionProvider = box
-        transaction.tracksVelocity = true
+        transaction.transitionResolver = .interactive { pages in
+            .init(provideTransition(pages))
+        }
         withTransaction(transaction, updateState)
     }
 
-    public func updateTransition(body: @escaping (inout Definition) -> Void) {
-        let box = store.transitionProvider as! BoxedTransitionProvider<Definition>
-        box.updateTransition(body: body)
-    }
-
-    public func completeTransition(body: @escaping (inout Definition) -> Void) {
-        let box = store.transitionProvider as! BoxedTransitionProvider<Definition>
-        body(&box.definition!)
-        box.store!.send(.completeInteractiveTransition)
-    }
-
-    public func cancelTransition(updateState: () -> Void, updateTransition: @escaping (inout Definition) -> Void) {
-        let box = store.transitionProvider as! BoxedTransitionProvider<Definition>
-        updateTransition(&box.definition!)
+    public func updateTransition(body: @escaping (inout Transition) -> Void) {
+        guard wrappedValue != nil else {
+            assertionFailure("No interactive transition of type \(Transition.self) is active.")
+            return
+        }
         var transaction = Transaction()
-        transaction.interactiveTransitionProgress = .end
-        transaction.transitionProvider = box
-        withTransaction(transaction, updateState)
+        store.send(.updateInteractiveTransition {
+            $0.modify(as: Transition.self, body: body)
+        }, transaction: transaction)
+    }
+
+    public func completeTransition(updateState: () -> Void, updateTransition body: @escaping (inout Transition) -> Void) {
+        // Any state update during a transition will be applied immediately post transition.
+        updateState()
+        updateTransition { t in
+            body(&t)
+            assert(t.isComplete)
+        }
     }
 }
-*/

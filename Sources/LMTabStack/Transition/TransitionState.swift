@@ -10,7 +10,7 @@ public struct TransitioningPages {
     }
 
     public subscript(id id: some Hashable & Sendable) -> PageProxy? {
-        assert(type(of: id) != AnyPageID.self, "Argument label \"id\" is required when subscripting with AnyPageID.")
+        assert(type(of: id) != AnyPageID.self, "Argument label \"id\" should be omitted when subscripting with AnyPageID.")
         return self[AnyPageID(id)]
     }
 
@@ -126,6 +126,15 @@ struct TransitionResolvedState: Equatable {
                 t.token
             case .automatic(let t):
                 t.token
+            }
+        }
+
+        var isInteractive: Bool {
+            switch self {
+            case .interactive:
+                true
+            case .automatic:
+                false
             }
         }
 

@@ -12,7 +12,7 @@ struct AnyInteractiveTransition: Equatable {
         lhs.id == rhs.id && lhs.token == rhs.token
     }
 
-    private var base: any InteractiveTransition
+    private(set) var base: any InteractiveTransition
 
     init(_ transition: some InteractiveTransition) {
         id = UUID()

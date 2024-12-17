@@ -24,6 +24,7 @@ struct TabStackFeature {
     enum Action {
         case pages(IdentifiedActionOf<PageFeature>)
         case update(IdentifiedArrayOf<GeneratedPage>, TransitionResolver?)
+        case updateInteractiveTransition((inout AnyInteractiveTransition) -> Void)
 
         case transitionDidCommit(token: Int, animationDuration: TimeInterval?)
         case transitionDidComplete
@@ -59,6 +60,15 @@ struct TabStackFeature {
             guard !behaviors.isEmpty else { break }
             state.transitionStage = .unresolved(.init(target: newPages, resolver: resolver))
             state.resolveTransition()
+
+        case .updateInteractiveTransition(let modify):
+            switch state.resolvedTransition.transition {
+            case .interactive(var transition):
+                modify(&transition)
+                state.resolvedTransition.transition = .interactive(transition)
+            default:
+                fatalError()
+            }
 
         case let .transitionDidCommit(token: token, animationDuration: animationDuration):
             return state.transitionDidCommit(token: token, animationDuration: animationDuration)
@@ -205,6 +215,20 @@ private extension TabStackFeature.State {
         return .none
     }
 
+    private mutating func waitForAnimation(duration: TimeInterval?) -> Effect<TabStackFeature.Action> {
+        resolvedTransition.waitingTarget = .waitingForAnimation
+        let duration = Duration.milliseconds(round((duration ?? 0) * 1000))
+        return .run { send in
+            do {
+                try await Task.sleep(for: duration)
+                await send(.transitionDidComplete)
+            } catch {
+                logger.error("Transition animation task is cancelled.")
+            }
+        }
+
+    }
+
     mutating func transitionDidCommit(token: Int, animationDuration: TimeInterval?) -> Effect<TabStackFeature.Action> {
         guard resolvedTransition != nil else { fatalError() }
         // Check if we have already processed it.
@@ -218,19 +242,15 @@ private extension TabStackFeature.State {
                 break
             }
 
-            resolvedTransition.waitingTarget = .waitingForAnimation
-            let duration = Duration.milliseconds(round((animationDuration ?? 0) * 1000))
-            return .run { send in
-                do {
-                    try await Task.sleep(for: duration)
-                    await send(.transitionDidComplete)
-                } catch {
-                    logger.error("Transition animation task is cancelled.")
-                }
+            return waitForAnimation(duration: animationDuration ?? 0)
+
+        case .interactive(let t):
+            guard t.isComplete else {
+                // Do nothing, let it to render
+                break
             }
 
-        case .interactive:
-            fatalError("Unimplemented")
+            return waitForAnimation(duration: animationDuration ?? 0)
         }
 
         for i in pages.indices where pages[i].transition != nil {

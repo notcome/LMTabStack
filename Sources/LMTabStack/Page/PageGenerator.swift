@@ -20,11 +20,11 @@ struct PageGenerator: View {
 
             Color.clear
                 .onChangeWithTransaction(of: layoutPages) { layout, tx in
-                    var automaticProvider: AutomaticTransitionProvider?
-                    if let provider = tx.transitionProvider {
-                        automaticProvider = provider
+                    var resolver: TransitionResolver?
+                    if let explicitResolver = tx.transitionResolver {
+                        resolver = explicitResolver
                     } else if tx.enableAutomaticTransition {
-                        automaticProvider = { pages in
+                        resolver = .automatic { pages in
                             let resolver = viewContent.automaticTransitionResolver
                             guard let t = resolver.resolve(transitioningPages: pages) else {
                                 return .init(EmptyTransition(progress: .start))
@@ -32,8 +32,7 @@ struct PageGenerator: View {
                             return t
                         }
                     }
-
-                    store.send(.update(.init(uniqueElements: pages), automaticProvider.map(TransitionResolver.automatic)))
+                    store.send(.update(.init(uniqueElements: pages), resolver))
                 }
         }
     }
