@@ -122,12 +122,14 @@ private extension TabStackFeature.State {
             let id = oldPage.id
 
             guard let newPage = newPages[id: id] else {
+                guard !oldPage.hidden else { continue }
                 behaviors[id] = .disappear(oldPage.placement)
                 continue
             }
             pages[id: id]!.content = newPage.content
 
             guard let newPlacement = newPage.placement else {
+                guard !oldPage.hidden else { continue }
                 behaviors[id] = .disappear(oldPage.placement)
                 continue
             }
