@@ -48,6 +48,7 @@ struct PageHostingView: View {
     var body: some View {
         let opacity = store.resolvedOpacity
         let frame = store.resolvedPlacement.frame
+        let hasTransition = store.transitionBehavior != nil
 
         Group {
             switch renderingMode {
@@ -72,6 +73,7 @@ struct PageHostingView: View {
         .opacity(opacity)
         .environment(store)
         .ignoresSafeArea(.all)
+        .allowsHitTesting(!hasTransition)
     }
 
     func convertToMountedLayout(summary: TransitionElementSummary, proxy: GeometryProxy) -> PageMountedLayout? {

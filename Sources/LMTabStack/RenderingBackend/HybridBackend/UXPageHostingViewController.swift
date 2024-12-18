@@ -18,6 +18,7 @@ struct PageHostingRoot: View {
                 summary.transitionToken = transitionToken
                 summary.pageAnchor = pageAnchor
             }
+            .frame(width: placement.frame.width, height: placement.frame.height)
             .blur(radius: store.transition?.contentEffects.blurRadius ?? 0)
             .ignoresSafeArea(.all)
     }
