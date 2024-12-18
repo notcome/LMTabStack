@@ -9,13 +9,16 @@ struct TransitionGenerator: View {
         if let transition {
             Group(sections: transition.morphingViews) { sections in
                 let morphingViews = MorphingViewsProxy.from(sections)
-                let transitions = transition.transitions(morphingViews: morphingViews)
-                Group(sections: transitions) { sections in
-                    let projection = Projection(morphingViews: morphingViews, transition: transition)
-                    Color.clear
-                        .onChange(of: projection, initial: true) { _, newValue in
-                            newValue.update(to: store, sections: sections)
-                        }
+                // When transition is cleared, this closure might still be called.
+                if store.transitionStage != nil {
+                    let transitions = transition.transitions(morphingViews: morphingViews)
+                    Group(sections: transitions) { sections in
+                        let projection = Projection(morphingViews: morphingViews, transition: transition)
+                        Color.clear
+                            .onChange(of: projection, initial: true) { _, newValue in
+                                newValue.update(to: store, sections: sections)
+                            }
+                    }
                 }
             }
         }
