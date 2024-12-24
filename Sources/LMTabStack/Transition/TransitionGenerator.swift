@@ -60,14 +60,13 @@ private struct Projection: Equatable {
                 for subview in section.content {
                     guard let ref = subview.containerValues.viewRef else { continue }
 
-                    let effects: TransitionEffects = subview.containerValues
-                        .transitionEffectsBuilder
-                        .nonemptyEffects
+                    let values: TransitionValues = subview.containerValues
+                        .transitionValuesBuilder
+                        .nonemptyValues
                         .reduce(into: .init()) {
-                            $0.merge(other: $1.1)
+                            $0.merge($1.1)
                         }
-                    updates[ref.pageID, default: .init()].process(ref: ref, effects: effects)
-                    updates[ref.pageID, default: .init()].process(values: subview.containerValues.transitionValues)
+                    updates[ref.pageID, default: .init()].process(ref: ref, values: values)
                 }
             }
 
@@ -92,8 +91,8 @@ private struct Projection: Equatable {
             for subview in section.content {
                 guard let ref = subview.containerValues.viewRef else { continue }
 
-                for (timing, effects) in subview.containerValues.transitionEffectsBuilder.nonemptyEffects {
-                    updates[timing, default: [:]][ref.pageID, default: .init()].process(ref: ref, effects: effects)
+                for (timing, values) in subview.containerValues.transitionValuesBuilder.nonemptyValues {
+                    updates[timing, default: [:]][ref.pageID, default: .init()].process(ref: ref, values: values)
                 }
             }
         }
@@ -114,31 +113,23 @@ private struct Projection: Equatable {
 }
 
 private extension PageTransitionUpdate {
-    mutating func process(ref: ViewRef, effects: TransitionEffects) {
+    mutating func process(ref: ViewRef, values: TransitionValues) {
         switch ref {
         case .content:
-            contentEffects?.merge(other: effects)
-            if contentEffects == nil {
-                contentEffects = effects
+            contentValues?.merge(values)
+            if contentValues == nil {
+                contentValues = values
             }
         case .wrapper:
-            wrapperEffects?.merge(other: effects)
-            if wrapperEffects == nil {
-                wrapperEffects = effects
+            wrapperValues?.merge(values)
+            if wrapperValues == nil {
+                wrapperValues = values
             }
         case .transitionElement(let id):
-            transitionElementEffects[id.elementID, default: .init()].merge(other: effects)
+            transitionElementValues[id.elementID, default: .init()].merge(values)
         case .morphingView(let id):
-            morphingViewEffects[id.morphingViewID, default: .init()].merge(other: effects)
+            morphingViewValues[id.morphingViewID, default: .init()].merge(values)
         }
     }
 
-    mutating func process(values: PageTransitionValues) {
-        guard !values.dict.isEmpty else { return }
-        if transitionValues == nil {
-            transitionValues = values
-        } else {
-            transitionValues!.merge(values)
-        }
-    }
 }

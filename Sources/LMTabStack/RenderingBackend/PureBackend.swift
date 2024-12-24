@@ -19,19 +19,19 @@ struct PageHostingViewPureBackend: View {
                         summary.pageAnchor = pageAnchor
                     }
                     .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
-                    .modifier(store.transition?.contentEffects ?? .init())
+//                    .modifier(store.transition?.contentEffects ?? .init())
                     .zIndex(0)
 
                 if let morphingViews = store.transition?.morphingViews {
                     ForEach(morphingViews) { morphingView in
                         morphingView
                             .content
-                            .modifier(morphingView.effects)
+//                            .modifier(morphingView.effects)
                             .zIndex(morphingView.zIndex)
                     }
                 }
             }
-            .modifier(store.transition?.wrapperEffects ?? .init())
+//            .modifier(store.transition?.wrapperEffects ?? .init())
         }
     }
 }
