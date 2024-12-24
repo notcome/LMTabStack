@@ -35,15 +35,12 @@ enum ViewRef: Hashable {
     case content(AnyPageID)
     case wrapper(AnyPageID)
     case transitionElement(TransitionElementProxy.ID)
-    case morphingView(MorphingViewProxy.ID)
 
     var pageID: AnyPageID {
         switch self {
         case .content(let pageID), .wrapper(let pageID):
             pageID
         case .transitionElement(let id):
-            id.pageID
-        case .morphingView(let id):
             id.pageID
         }
     }
@@ -68,7 +65,7 @@ extension Transaction {
 struct EmptyTransition: AutomaticTransition {
     var progress: TransitionProgress
 
-    func transitions(morphingViews: MorphingViewsProxy) -> some View {
+    var transitions: some View {
         EmptyView()
     }
 }

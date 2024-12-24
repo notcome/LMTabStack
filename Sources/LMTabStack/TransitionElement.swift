@@ -42,8 +42,6 @@ private struct TransitionElementModifier: ViewModifier {
     func body(content: Content) -> some View {
         let childStore = scopeToTransitionValuesStore(store: store, state: \.transition?.transitionElements[id: id]?.values)
 
-        let values = store.transition?.transitionElements[id: id]?.values
-
         Color.clear
             .overlay {
                 switch renderingMode {

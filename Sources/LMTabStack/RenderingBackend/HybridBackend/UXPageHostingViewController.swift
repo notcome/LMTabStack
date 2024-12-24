@@ -24,21 +24,6 @@ struct PageHostingRoot: View {
     }
 }
 
-struct MorphingViewHostingRoot: View {
-    var id: AnyMorphingViewID
-    var content: AnyView
-
-    @Environment(PageStore.self)
-    private var store
-
-    var body: some View {
-        let blurRadius = store.transition?.morphingViews[id: id]?.values.blurRadius ?? 0
-        content
-            .blur(radius: blurRadius)
-            .ignoresSafeArea()
-    }
-}
-
 final class UXPageHostingViewController: UIViewController {
     let hostingController: UIHostingController<PageHostingRoot>
     let wrapperView = UXAnimationView()
@@ -80,40 +65,5 @@ final class UXPageHostingViewController: UIViewController {
             view.trailingAnchor.constraint(equalTo: superview.trailingAnchor),
             view.bottomAnchor.constraint(equalTo: superview.bottomAnchor),
         ])
-    }
-
-    private var morphingViewWrappers: [AnyMorphingViewID: UXAnimationView] = [:]
-
-    func update(morphingViews: IdentifiedArrayOf<MorphingViewState>, transaction: Transaction) {
-        for morphingView in morphingViews {
-            let id = morphingView.id
-
-            guard let wrapperView = morphingViewWrappers[id] else {
-                let wrapperView = UXAnimationView()
-                morphingViewWrappers[id] = wrapperView
-                self.wrapperView.addSubview(wrapperView)
-                bindEdgesToSuperview(wrapperView)
-                wrapperView.layer.zPosition = morphingView.zIndex
-
-                let rootView = MorphingViewHostingRoot(id: id, content: morphingView.content)
-                let hostingView = _UIHostingView(rootView: rootView)
-                hostingView.backgroundColor = .clear
-                wrapperView.addSubview(hostingView)
-                bindEdgesToSuperview(hostingView)
-
-                hostingView.layoutIfNeeded()
-                continue
-            }
-
-            wrapperView.layer.zPosition = morphingView.zIndex
-            wrapperView.apply(values: morphingView.values, transaction: transaction)
-        }
-    }
-
-    func resetMorphingViews() {
-        morphingViewWrappers.values.forEach {
-            $0.removeFromSuperview()
-        }
-        morphingViewWrappers = [:]
     }
 }

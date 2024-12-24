@@ -102,21 +102,12 @@ struct TransitionResolvedState: Equatable {
         case interactive(AnyInteractiveTransition)
         case automatic(AnyAutomaticTransition)
 
-        var morphingViews: AnyView {
+        var transitions: AnyView {
             switch self {
             case .interactive(let t):
-                t.morphingViews
+                t.transitions
             case .automatic(let t):
-                t.morphingViews
-            }
-        }
-
-        func transitions(morphingViews: MorphingViewsProxy) -> AnyView {
-            switch self {
-            case .interactive(let t):
-                t.transitions(morphingViews: morphingViews)
-            case .automatic(let t):
-                t.transitions(morphingViews: morphingViews)
+                t.transitions
             }
         }
 

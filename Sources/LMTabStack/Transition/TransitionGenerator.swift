@@ -7,19 +7,13 @@ struct TransitionGenerator: View {
 
     var body: some View {
         if let transition {
-            Group(sections: transition.morphingViews) { sections in
-                let morphingViews = MorphingViewsProxy.from(sections)
-                // When transition is cleared, this closure might still be called.
-                if store.transitionStage != nil {
-                    let transitions = transition.transitions(morphingViews: morphingViews)
-                    Group(sections: transitions) { sections in
-                        let projection = Projection(morphingViews: morphingViews, transition: transition)
-                        Color.clear
-                            .onChange(of: projection, initial: true) { _, newValue in
-                                newValue.update(to: store, sections: sections)
-                            }
+            let transitions = transition.transitions
+            Group(sections: transitions) { sections in
+                let projection = Projection(transition: transition)
+                Color.clear
+                    .onChange(of: projection, initial: true) { _, newValue in
+                        newValue.update(to: store, sections: sections)
                     }
-                }
             }
         }
     }
@@ -31,13 +25,7 @@ struct TransitionGenerator: View {
 }
 
 private struct Projection: Equatable {
-    var morphingViewsByPages: [AnyPageID: IdentifiedArrayOf<MorphingViewContent>]
     var transition: TransitionResolvedState.Transition
-
-    init(morphingViews: MorphingViewsProxy, transition: TransitionResolvedState.Transition)  {
-        morphingViewsByPages = morphingViews.morphingViewsByPages
-        self.transition = transition
-    }
 
     @MainActor
     func update(to store: TabStackStore, sections: SectionCollection) {
@@ -52,10 +40,6 @@ private struct Projection: Equatable {
 
         guard transition.isComplete else {
             var updates: [AnyPageID: PageTransitionUpdate] = [:]
-            for (pageID, morphingViews) in morphingViewsByPages {
-                updates[pageID, default: .init()].morphingViews = morphingViews
-            }
-
             for section in sections {
                 for subview in section.content {
                     guard let ref = subview.containerValues.viewRef else { continue }
@@ -79,10 +63,6 @@ private struct Projection: Equatable {
 
             store.send(.transitionDidCommit(token: transition.token, animationDuration: nil))
             return
-        }
-
-        for (pageID, morphingViews) in morphingViewsByPages {
-            send(id: pageID, action: .syncMorphingViews(morphingViews))
         }
 
         var updates: [TransitionAnimation: [AnyPageID: PageTransitionUpdate]] = [:]
@@ -127,8 +107,6 @@ private extension PageTransitionUpdate {
             }
         case .transitionElement(let id):
             transitionElementValues[id.elementID, default: .init()].merge(values)
-        case .morphingView(let id):
-            morphingViewValues[id.morphingViewID, default: .init()].merge(values)
         }
     }
 

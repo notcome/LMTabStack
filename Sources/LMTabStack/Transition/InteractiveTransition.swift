@@ -19,12 +19,8 @@ struct AnyInteractiveTransition: Equatable {
         base = transition
     }
 
-    var morphingViews: AnyView {
-        base.morphingViews.eraseToAnyView()
-    }
-
-    func transitions(morphingViews: MorphingViewsProxy) -> AnyView {
-        base.transitions(morphingViews: morphingViews).eraseToAnyView()
+    var transitions: AnyView {
+        base.transitions.eraseToAnyView()
     }
 
     var isComplete: Bool {
