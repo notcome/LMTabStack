@@ -1,6 +1,6 @@
 import SwiftUI
 
-protocol TransitionAnimationProtocol {
+protocol TransitionAnimationProtocol: Hashable {
     var duration: Double { get }
 
     func createCAAnimation() -> CABasicAnimation
@@ -69,7 +69,7 @@ struct TimingCurveTransitionAnimation: TransitionAnimationProtocol {
     }
 }
 
-enum SpringTiming {
+enum SpringTiming: Hashable {
     case simple(duration: Double, bounce: Double)
 
     func createCAAnimation() -> CASpringAnimation {
@@ -112,8 +112,16 @@ struct SpringTransitionAnimation: TransitionAnimationProtocol {
 /// A limited set of animations.
 ///
 /// They need to be correctly rendered in both SwiftUI and Core Animation.
-public struct TransitionAnimation {
+public struct TransitionAnimation: Hashable {
     var animation: any TransitionAnimationProtocol
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        AnyHashable(lhs.animation) == AnyHashable(rhs.animation)
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        AnyHashable(animation).hash(into: &hasher)
+    }
 
     public func createCAAnimation() -> CABasicAnimation {
         animation.createCAAnimation()

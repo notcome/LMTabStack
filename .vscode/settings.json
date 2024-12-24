@@ -1,0 +1,8 @@
+{
+    "swift.buildArguments": [
+        "-Xswiftc",
+        "-target",
+        "-Xswiftc",
+        "arm64-apple-ios18.1-simulator"
+    ]
+}

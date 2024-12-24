@@ -1,44 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
 
-/*
-@MainActor
-final class BoxedTransitionProvider<Definition: TransitionDefinition>: TransitionProvider {
-    weak var store: TabStackStore?
-    var provideTransition: (IdentifiedArrayOf<PageProxy>) -> Definition
-    var definition: Definition?
-    var cachedUpdate: ((inout Definition) -> Void)?
-
-    init(store: TabStackStore, provideTransition: @escaping (IdentifiedArrayOf<PageProxy>) -> Definition) {
-        self.store = store
-        self.provideTransition = provideTransition
-    }
-
-    func transitions(for transitioningPages: IdentifiedCollections.IdentifiedArrayOf<PageProxy>, progress: TransitionProgress) -> (any TransitionDefinition) {
-        if let definition {
-            return definition
-        }
-
-        definition = provideTransition(transitioningPages)
-
-        if let cachedUpdate {
-            cachedUpdate(&definition!)
-            self.cachedUpdate = nil
-        }
-        return definition!
-    }
-
-    func updateTransition(body: @escaping (inout Definition) -> Void) {
-        if definition == nil {
-            cachedUpdate = body
-            return
-        }
-        body(&definition!)
-        store?.send(.refreshTransition)
-    }
-}
- */
-
 @MainActor
 @propertyWrapper
 public struct TransitionInteraction<Transition: InteractiveTransition>: DynamicProperty {
@@ -82,7 +44,7 @@ public struct TransitionInteraction<Transition: InteractiveTransition>: DynamicP
             assertionFailure("No interactive transition of type \(Transition.self) is active.")
             return
         }
-        var transaction = Transaction()
+        let transaction = Transaction()
         store.send(.updateInteractiveTransition {
             $0.modify(as: Transition.self, body: body)
         }, transaction: transaction)
