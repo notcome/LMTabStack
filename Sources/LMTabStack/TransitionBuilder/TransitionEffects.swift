@@ -1,5 +1,54 @@
 import SwiftUI
 
+public struct TransitionEffectsProxy {
+    var effects: TransitionEffects = .init()
+
+    public func scale(x: CGFloat? = nil, y: CGFloat? = nil) -> TransitionEffectsProxy {
+        var copy = self
+        copy.effects.scaleX = x
+        copy.effects.scaleY = y
+        return copy
+    }
+
+    public func scale(_ k: CGFloat) -> TransitionEffectsProxy {
+        scale(x: k, y: k)
+    }
+
+    public func offset(x: CGFloat? = nil, y: CGFloat? = nil) -> TransitionEffectsProxy {
+        var copy = self
+        copy.effects.offsetX = x
+        copy.effects.offsetY = y
+        return copy
+    }
+
+    public func offset(_ d: CGPoint) -> TransitionEffectsProxy {
+        offset(x: d.x, y: d.y)
+    }
+
+    public func opacity(_ k: CGFloat) -> TransitionEffectsProxy {
+        var copy = self
+        copy.effects.opacity = k
+        return copy
+    }
+
+    public func blurRadius(_ r: CGFloat) -> TransitionEffectsProxy {
+        var copy = self
+        copy.effects.blurRadius = r
+        return copy
+    }
+}
+
+/*
+ view
+    .transition(timing: .default) { proxy in
+        proxy.scale(x: 30, y: 30)
+    }
+    .transition(timing: .spring) { proxy in
+        proxy.offset(x: 300, y: 300)
+    }
+ */
+
+
 struct TransitionEffects: Equatable {
     var scaleX: CGFloat?
     var scaleY: CGFloat?
@@ -7,6 +56,10 @@ struct TransitionEffects: Equatable {
     var offsetY: CGFloat?
     var opacity: CGFloat?
     var blurRadius: CGFloat?
+
+    var isEmpty: Bool {
+        self == .init()
+    }
 
     mutating func merge(other: TransitionEffects) {
         if let scaleX = other.scaleX {

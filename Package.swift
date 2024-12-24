@@ -24,5 +24,11 @@ let package = Package(
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             ]
         ),
+        .testTarget(
+            name: "LMTabStackTests",
+            dependencies: [
+                "LMTabStack",
+            ]
+        )
     ]
 )

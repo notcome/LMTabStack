@@ -59,7 +59,15 @@ private struct Projection: Equatable {
             for section in sections {
                 for subview in section.content {
                     guard let ref = subview.containerValues.viewRef else { continue }
-                    updates[ref.pageID, default: .init()].process(subview: subview)
+
+                    let effects: TransitionEffects = subview.containerValues
+                        .transitionEffectsBuilder
+                        .nonemptyEffects
+                        .reduce(into: .init()) {
+                            $0.merge(other: $1.1)
+                        }
+                    updates[ref.pageID, default: .init()].process(ref: ref, effects: effects)
+                    updates[ref.pageID, default: .init()].process(values: subview.containerValues.transitionValues)
                 }
             }
 
@@ -74,39 +82,39 @@ private struct Projection: Equatable {
             return
         }
 
-
         for (pageID, morphingViews) in morphingViewsByPages {
             send(id: pageID, action: .syncMorphingViews(morphingViews))
         }
 
-        var animationDuration: TimeInterval = 0
-        for section in sections {
-            guard let timing = section.containerValues.pageTransitionTiming else { continue }
-            let transitionAnimation: TransitionAnimation? = transition.isComplete ? timing : nil
-            animationDuration = max(animationDuration, transitionAnimation?.animation.duration ?? 0)
+        var updates: [TransitionAnimation: [AnyPageID: PageTransitionUpdate]] = [:]
 
-            var updates: [AnyPageID: PageTransitionUpdate] = [:]
+        for section in sections {
             for subview in section.content {
                 guard let ref = subview.containerValues.viewRef else { continue }
-                updates[ref.pageID, default: .init()].process(subview: subview)
+
+                for (timing, effects) in subview.containerValues.transitionEffectsBuilder.nonemptyEffects {
+                    updates[timing, default: [:]][ref.pageID, default: .init()].process(ref: ref, effects: effects)
+                }
             }
+        }
+        for (timing, updatesByPage) in updates {
+            var transaction = Transaction(animation: timing.createSwiftUIAnimation())
+            transaction.transitionAnimation = timing
 
-            var transaction = Transaction(animation: transitionAnimation?.createSwiftUIAnimation())
-            transaction.transitionAnimation = transitionAnimation
-
-            for (id, update) in updates {
+            for (id, update) in updatesByPage {
                 send(id: id, action: .update(update), transaction: transaction)
             }
+        }
+
+        let animationDuration: TimeInterval = updates.keys.reduce(into: 0) {
+            $0 = max($0, $1.animation.duration)
         }
         store.send(.transitionDidCommit(token: transition.token, animationDuration: animationDuration))
     }
 }
 
 private extension PageTransitionUpdate {
-    mutating func process(subview: Subview) {
-        let ref = subview.containerValues.viewRef!
-        let effects = subview.containerValues.transitionEffects
-
+    mutating func process(ref: ViewRef, effects: TransitionEffects) {
         switch ref {
         case .content:
             contentEffects?.merge(other: effects)
@@ -123,12 +131,14 @@ private extension PageTransitionUpdate {
         case .morphingView(let id):
             morphingViewEffects[id.morphingViewID, default: .init()].merge(other: effects)
         }
+    }
 
-        if !subview.containerValues.transitionValues.dict.isEmpty {
-            transitionValues?.merge(subview.containerValues.transitionValues)
-            if transitionValues == nil {
-                transitionValues = subview.containerValues.transitionValues
-            }
+    mutating func process(values: PageTransitionValues) {
+        guard !values.dict.isEmpty else { return }
+        if transitionValues == nil {
+            transitionValues = values
+        } else {
+            transitionValues!.merge(values)
         }
     }
 }

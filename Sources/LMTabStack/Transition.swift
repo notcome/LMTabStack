@@ -3,38 +3,7 @@ import SwiftUI
 
 extension ContainerValues {
     @Entry
-    var transitionEffects = TransitionEffects()
-
-    @Entry
     var transitionValues = PageTransitionValues()
-}
-
-public extension View {
-    func transitionScale(x: CGFloat? = nil, y: CGFloat? = nil) -> some View {
-        self.containerValue(\.transitionEffects.scaleX, x)
-            .containerValue(\.transitionEffects.scaleY, y)
-    }
-
-    func transitionScale(_ k: CGFloat) -> some View {
-        transitionScale(x: k, y: k)
-    }
-
-    func transitionOffset(x: CGFloat? = nil, y: CGFloat? = nil) -> some View {
-        self.containerValue(\.transitionEffects.offsetX, x)
-            .containerValue(\.transitionEffects.offsetY, y)
-    }
-
-    func transitionOffset(_ d: CGPoint) -> some View {
-        transitionOffset(x: d.x, y: d.y)
-    }
-
-    func transitionOpacity(_ k: CGFloat) -> some View {
-        self.containerValue(\.transitionEffects.opacity, k)
-    }
-
-    func transitionBlurRadius(_ r: CGFloat) -> some View {
-        self.containerValue(\.transitionEffects.blurRadius, r)
-    }
 }
 
 extension Transaction {
@@ -93,25 +62,6 @@ extension ViewRefView: View {
     var body: some View {
         Color.clear
             .containerValue(\.viewRef, ref)
-    }
-}
-
-public struct Track<Content: View>: View {
-    public var timing: TransitionAnimation
-
-    @ViewBuilder
-    public var content: Content
-
-    public init(timing: TransitionAnimation, @ViewBuilder content: () -> Content) {
-        self.timing = timing
-        self.content = content()
-    }
-
-    public var body: some View {
-        Section {
-            content
-        }
-        .containerValue(\.pageTransitionTiming, timing)
     }
 }
 
