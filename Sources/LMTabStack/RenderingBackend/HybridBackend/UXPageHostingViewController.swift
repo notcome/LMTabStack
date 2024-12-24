@@ -19,7 +19,7 @@ struct PageHostingRoot: View {
                 summary.pageAnchor = pageAnchor
             }
             .frame(width: placement.frame.width, height: placement.frame.height)
-            .blur(radius: store.transition?.contentEffects.blurRadius ?? 0)
+            .blur(radius: store.transition?.contentValues.blurRadius ?? 0)
             .ignoresSafeArea(.all)
     }
 }
@@ -32,7 +32,7 @@ struct MorphingViewHostingRoot: View {
     private var store
 
     var body: some View {
-        let blurRadius = store.transition?.morphingViews[id: id]?.effects.blurRadius ?? 0
+        let blurRadius = store.transition?.morphingViews[id: id]?.values.blurRadius ?? 0
         content
             .blur(radius: blurRadius)
             .ignoresSafeArea()
@@ -107,7 +107,7 @@ final class UXPageHostingViewController: UIViewController {
             }
 
             wrapperView.layer.zPosition = morphingView.zIndex
-            wrapperView.apply(effects: morphingView.effects, transaction: transaction)
+            wrapperView.apply(values: morphingView.values, transaction: transaction)
         }
     }
 

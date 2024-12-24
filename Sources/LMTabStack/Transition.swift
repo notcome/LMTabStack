@@ -1,11 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
 
-extension ContainerValues {
-    @Entry
-    var transitionValues = PageTransitionValues()
-}
-
 extension Transaction {
     @Entry
     var transitionResolver: TransitionResolver?

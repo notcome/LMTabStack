@@ -40,22 +40,24 @@ private struct TransitionElementModifier: ViewModifier {
     private var renderingMode
 
     func body(content: Content) -> some View {
-        let effects = store.transition?.transitionElements[id: id]?.effects
+        let childStore = scopeToTransitionValuesStore(store: store, state: \.transition?.transitionElements[id: id]?.values)
+
+        let values = store.transition?.transitionElements[id: id]?.values
 
         Color.clear
             .overlay {
                 switch renderingMode {
                 case .pure:
                     content
-                        .modifier(effects ?? .init())
+//                        .modifier(effects ?? .init())
                 case .hybrid:
                     TransitionElementHybridBackend(
                         id: id,
                         content: AnyView(content),
-                        effects: effects)
+                        transitionValues: childStore.state)
                 }
-
             }
+            .environment(childStore)
             .anchorPreference(key: TransitionElementSummary.self, value: .bounds) { anchor in
                 var summary = TransitionElementSummary()
                 summary.elements[id] = anchor
@@ -69,12 +71,12 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
         var id: AnyTransitionElementID
         var content: AnyView
 
-        @Environment(PageStore.self)
+        @Environment(TransitionValuesStore.self)
         private var store
 
 
         var body: some View {
-            let blurRadius = store.transition?.transitionElements[id: id]?.effects.blurRadius ?? 0
+            let blurRadius = store.blurRadius ?? 0
             content
                 .blur(radius: blurRadius)
                 .ignoresSafeArea()
@@ -83,7 +85,7 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
 
     var id: AnyTransitionElementID
     var content: AnyView
-    var effects: TransitionEffects?
+    var transitionValues: TransitionValues?
 
     func makeUIView(context: Context) -> UXAnimationView {
         let wrapper = Wrapper(id: id, content: content)
@@ -110,8 +112,8 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
             hostingView.rootView.content = content
         }
 
-        if let effects {
-            view.apply(effects: effects, transaction: context.transaction)
+        if let transitionValues {
+            view.apply(values: transitionValues, transaction: context.transaction)
         } else {
             view.resetAllAnimations()
         }

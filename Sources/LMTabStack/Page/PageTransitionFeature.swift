@@ -21,7 +21,7 @@ public enum PageTransitionBehavior: Equatable {
 struct TransitionElementTransitionState: Identifiable, Equatable {
     var id: AnyTransitionElementID
     var frame: CGRect
-    var effects = TransitionEffects()
+    var values = TransitionValues()
 }
 
 @ObservableState
@@ -33,18 +33,17 @@ struct MorphingViewState: Identifiable, Equatable {
     var content: AnyView
 
     var zIndex: Double = 0
-    var effects = TransitionEffects()
+    var values = TransitionValues()
 }
 
 struct PageTransitionUpdate: Equatable {
     var morphingViews: IdentifiedArrayOf<MorphingViewContent> = []
 
-    var contentEffects: TransitionEffects?
-    var wrapperEffects: TransitionEffects?
-    var transitionValues: PageTransitionValues?
+    var contentValues: TransitionValues?
+    var wrapperValues: TransitionValues?
 
-    var transitionElementEffects: [AnyTransitionElementID: TransitionEffects] = [:]
-    var morphingViewEffects: [AnyMorphingViewID: TransitionEffects] = [:]
+    var transitionElementValues: [AnyTransitionElementID: TransitionValues] = [:]
+    var morphingViewValues: [AnyMorphingViewID: TransitionValues] = [:]
 }
 
 @Reducer
@@ -57,9 +56,8 @@ struct PageTransitionFeature {
         var transitionToken: Int?
 
         var behavior: PageTransitionBehavior
-        var contentEffects = TransitionEffects()
-        var wrapperEffects = TransitionEffects()
-        var transitionValues = PageTransitionValues()
+        var contentValues = TransitionValues()
+        var wrapperValues = TransitionValues()
 
         var transitionElements: IdentifiedArrayOf<TransitionElementTransitionState> = []
         var morphingViews: IdentifiedArrayOf<MorphingViewState> = []
@@ -112,20 +110,17 @@ extension PageTransitionFeature.State {
             }
         }
 
-        if let effects = update.contentEffects {
-            contentEffects.merge(other: effects)
+        if let values = update.contentValues {
+            contentValues.merge(values)
         }
-        if let effects = update.wrapperEffects {
-            wrapperEffects.merge(other: effects)
+        if let values = update.wrapperValues {
+            wrapperValues.merge(values)
         }
-        if let values = update.transitionValues {
-            transitionValues.merge(values)
+        for (id, values) in update.transitionElementValues {
+            transitionElements[id: id]!.values.merge(values)
         }
-        for (id, effects) in update.transitionElementEffects {
-            transitionElements[id: id]!.effects.merge(other: effects)
-        }
-        for (id, effects) in update.morphingViewEffects {
-            morphingViews[id: id]!.effects.merge(other: effects)
+        for (id, values) in update.morphingViewValues {
+            morphingViews[id: id]!.values.merge(values)
         }
     }
 }

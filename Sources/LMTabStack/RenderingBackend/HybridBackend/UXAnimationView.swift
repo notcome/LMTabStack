@@ -40,20 +40,20 @@ extension UXAnimationView {
         case animating(Double, Double)
     }
 
-    func apply(effects: TransitionEffects, transaction: Transaction) {
-        if let opacity = effects.opacity {
+    func apply(values: TransitionValues, transaction: Transaction) {
+        if let opacity = values.opacity {
             update(keyPath: "opacity", to: opacity, transaction: transaction)
         }
-        if let scaleX = effects.scaleX {
+        if let scaleX = values.scaleX {
             update(keyPath: "transform.scale.x", to: scaleX, transaction: transaction)
         }
-        if let scaleY = effects.scaleY {
+        if let scaleY = values.scaleY {
             update(keyPath: "transform.scale.y", to: scaleY, transaction: transaction)
         }
-        if let offsetX = effects.offsetX {
+        if let offsetX = values.offsetX {
             update(keyPath: "transform.translation.x", to: offsetX, transaction: transaction)
         }
-        if let offsetY = effects.offsetY {
+        if let offsetY = values.offsetY {
             update(keyPath: "transform.translation.y", to: offsetY, transaction: transaction)
         }
     }

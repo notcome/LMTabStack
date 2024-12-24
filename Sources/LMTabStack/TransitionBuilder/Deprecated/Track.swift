@@ -25,8 +25,8 @@ private struct TransitionScaleModifier: ViewModifier {
     @Environment(\.timing)
     private var timing
 
-    var x: CGFloat?
-    var y: CGFloat?
+    var x: Double?
+    var y: Double?
 
     func body(content: Content) -> some View {
         content.transition(timing: timing) { proxy in
@@ -36,7 +36,7 @@ private struct TransitionScaleModifier: ViewModifier {
 }
 
 extension View {
-    public func transitionScale(x: CGFloat? = nil, y: CGFloat? = nil) -> some View {
+    public func transitionScale(x: Double? = nil, y: Double? = nil) -> some View {
         modifier(TransitionScaleModifier(x: x, y: y))
     }
 
@@ -49,8 +49,8 @@ private struct TransitionOffsetModifier: ViewModifier {
     @Environment(\.timing)
     private var timing
 
-    var x: CGFloat?
-    var y: CGFloat?
+    var x: Double?
+    var y: Double?
 
     func body(content: Content) -> some View {
         content.transition(timing: timing) { proxy in
@@ -60,7 +60,7 @@ private struct TransitionOffsetModifier: ViewModifier {
 }
 
 extension View {
-    public func transitionOffset(x: CGFloat? = nil, y: CGFloat? = nil) -> some View {
+    public func transitionOffset(x: Double? = nil, y: Double? = nil) -> some View {
         modifier(TransitionOffsetModifier(x: x, y: y))
     }
 
@@ -73,7 +73,7 @@ private struct TransitionOpacityModifier: ViewModifier {
     @Environment(\.timing)
     private var timing
 
-    var k: CGFloat
+    var k: Double
 
     func body(content: Content) -> some View {
         content.transition(timing: timing) { proxy in
@@ -83,7 +83,7 @@ private struct TransitionOpacityModifier: ViewModifier {
 }
 
 extension View {
-    public func transitionOpacity(_ k: CGFloat) -> some View {
+    public func transitionOpacity(_ k: Double) -> some View {
         modifier(TransitionOpacityModifier(k: k))
     }
 }
@@ -92,7 +92,7 @@ private struct TransitionBlurRadiusModifier: ViewModifier {
     @Environment(\.timing)
     private var timing
 
-    var r: CGFloat
+    var r: Double
 
     func body(content: Content) -> some View {
         content.transition(timing: timing) { proxy in
@@ -102,7 +102,7 @@ private struct TransitionBlurRadiusModifier: ViewModifier {
 }
 
 extension View {
-    public func transitionBlurRadius(_ r: CGFloat) -> some View {
+    public func transitionBlurRadius(_ r: Double) -> some View {
         modifier(TransitionBlurRadiusModifier(r: r))
     }
 }
