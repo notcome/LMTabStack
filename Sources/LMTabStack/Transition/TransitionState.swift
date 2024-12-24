@@ -50,12 +50,8 @@ public struct PageProxy: Identifiable {
         state.mountedLayout!.pageFrame
     }
 
-    public var contentView: some View {
-        ViewRefView(ref: .content(id))
-    }
-
-    public var wrapperView: some View {
-        ViewRefView(ref: .wrapper(id))
+    public var page: some View {
+        ViewRefView(ref: .page(id))
     }
 
     public func transitionElement(_ id: some Hashable & Sendable) -> TransitionElementProxy? {

@@ -19,7 +19,7 @@ struct PageHostingRoot: View {
                 summary.pageAnchor = pageAnchor
             }
             .frame(width: placement.frame.width, height: placement.frame.height)
-            .blur(radius: store.transition?.contentValues.blurRadius ?? 0)
+            .blur(radius: store.transition?.transitionValues.blurRadius ?? 0)
             .ignoresSafeArea(.all)
     }
 }
@@ -27,7 +27,6 @@ struct PageHostingRoot: View {
 final class UXPageHostingViewController: UIViewController {
     let hostingController: UIHostingController<PageHostingRoot>
     let wrapperView = UXAnimationView()
-    let contentView = UXAnimationView()
 
     init(rootView: PageHostingRoot) {
         hostingController = .init(rootView: rootView)
@@ -43,11 +42,8 @@ final class UXPageHostingViewController: UIViewController {
         super.viewDidLoad()
         addChild(hostingController)
         view.addSubview(wrapperView)
-        wrapperView.addSubview(contentView)
-        contentView.addSubview(hostingView)
-
+        wrapperView.addSubview(hostingView)
         bindEdgesToSuperview(wrapperView)
-        bindEdgesToSuperview(contentView)
         bindEdgesToSuperview(hostingView)
     }
 

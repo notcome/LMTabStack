@@ -95,15 +95,10 @@ private struct Projection: Equatable {
 private extension PageTransitionUpdate {
     mutating func process(ref: ViewRef, values: TransitionValues) {
         switch ref {
-        case .content:
-            contentValues?.merge(values)
-            if contentValues == nil {
-                contentValues = values
-            }
-        case .wrapper:
-            wrapperValues?.merge(values)
-            if wrapperValues == nil {
-                wrapperValues = values
+        case .page:
+            transitionValues?.merge(values)
+            if transitionValues == nil {
+                transitionValues = values
             }
         case .transitionElement(let id):
             transitionElementValues[id.elementID, default: .init()].merge(values)

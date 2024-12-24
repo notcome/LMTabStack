@@ -25,11 +25,8 @@ struct TransitionElementTransitionState: Identifiable, Equatable {
 }
 
 struct PageTransitionUpdate: Equatable {
-    var contentValues: TransitionValues?
-    var wrapperValues: TransitionValues?
-
+    var transitionValues: TransitionValues?
     var transitionElementValues: [AnyTransitionElementID: TransitionValues] = [:]
-    var morphingViewValues: [AnyMorphingViewID: TransitionValues] = [:]
 }
 
 @Reducer
@@ -42,9 +39,8 @@ struct PageTransitionFeature {
         var transitionToken: Int?
 
         var behavior: PageTransitionBehavior
-        var contentValues = TransitionValues()
-        var wrapperValues = TransitionValues()
 
+        var transitionValues = TransitionValues()
         var transitionElements: IdentifiedArrayOf<TransitionElementTransitionState> = []
 
         init?(pageState: PageFeature.State, behavior: PageTransitionBehavior) {
@@ -74,11 +70,8 @@ struct PageTransitionFeature {
 
 extension PageTransitionFeature.State {
     mutating func apply(update: PageTransitionUpdate) {
-        if let values = update.contentValues {
-            contentValues.merge(values)
-        }
-        if let values = update.wrapperValues {
-            wrapperValues.merge(values)
+        if let values = update.transitionValues {
+            transitionValues.merge(values)
         }
         for (id, values) in update.transitionElementValues {
             transitionElements[id: id]!.values.merge(values)

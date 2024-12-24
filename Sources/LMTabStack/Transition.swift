@@ -32,14 +32,13 @@ extension ContainerValues {
 }
 
 enum ViewRef: Hashable {
-    case content(AnyPageID)
-    case wrapper(AnyPageID)
+    case page(AnyPageID)
     case transitionElement(TransitionElementProxy.ID)
 
     var pageID: AnyPageID {
         switch self {
-        case .content(let pageID), .wrapper(let pageID):
-            pageID
+        case .page(let id):
+            id
         case .transitionElement(let id):
             id.pageID
         }

@@ -18,10 +18,8 @@ extension PageHostingViewHybridBackend: UIViewControllerRepresentable {
         }
 
         if let transition = store.transition {
-            vc.contentView.apply(values: transition.contentValues, transaction: context.transaction)
-            vc.wrapperView.apply(values: transition.wrapperValues, transaction: context.transaction)
+            vc.wrapperView.apply(values: transition.transitionValues, transaction: context.transaction)
         } else {
-            vc.contentView.resetAllAnimations()
             vc.wrapperView.resetAllAnimations()
         }
     }
