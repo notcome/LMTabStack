@@ -5,6 +5,9 @@ struct PageHostingViewHybridBackend {
 
     @Environment(PageStore.self)
     private var store
+
+    @Environment(TransitionValuesStore.self)
+    private var transitionValues
 }
 
 extension PageHostingViewHybridBackend: UIViewControllerRepresentable {
@@ -17,8 +20,8 @@ extension PageHostingViewHybridBackend: UIViewControllerRepresentable {
             vc.hostingController.rootView.content = content
         }
 
-        if let transition = store.transition {
-            vc.wrapperView.apply(values: transition.transitionValues, transaction: context.transaction)
+        if !transitionValues.isEmpty {
+            vc.wrapperView.apply(values: transitionValues.state, transaction: context.transaction)
         } else {
             vc.wrapperView.resetAllAnimations()
         }

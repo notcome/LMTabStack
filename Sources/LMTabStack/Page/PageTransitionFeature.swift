@@ -21,12 +21,6 @@ public enum PageTransitionBehavior: Equatable {
 struct TransitionElementTransitionState: Identifiable, Equatable {
     var id: AnyTransitionElementID
     var frame: CGRect
-    var values = TransitionValues()
-}
-
-struct PageTransitionUpdate: Equatable {
-    var transitionValues: TransitionValues?
-    var transitionElementValues: [AnyTransitionElementID: TransitionValues] = [:]
 }
 
 @Reducer
@@ -39,8 +33,6 @@ struct PageTransitionFeature {
         var transitionToken: Int?
 
         var behavior: PageTransitionBehavior
-
-        var transitionValues = TransitionValues()
         var transitionElements: IdentifiedArrayOf<TransitionElementTransitionState> = []
 
         init?(pageState: PageFeature.State, behavior: PageTransitionBehavior) {
@@ -52,29 +44,6 @@ struct PageTransitionFeature {
             for (id, frame) in mountedLayout.transitionElements {
                 transitionElements.append(.init(id: id, frame: frame))
             }
-        }
-    }
-
-    enum Action {
-        case update(PageTransitionUpdate)
-    }
-
-    func reduce(into state: inout State, action: Action) -> Effect<Action> {
-        switch action {
-        case .update(let update):
-            state.apply(update: update)
-        }
-        return .none
-    }
-}
-
-extension PageTransitionFeature.State {
-    mutating func apply(update: PageTransitionUpdate) {
-        if let values = update.transitionValues {
-            transitionValues.merge(values)
-        }
-        for (id, values) in update.transitionElementValues {
-            transitionElements[id: id]!.values.merge(values)
         }
     }
 }

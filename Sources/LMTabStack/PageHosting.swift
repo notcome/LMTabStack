@@ -45,10 +45,15 @@ struct PageHostingView: View {
     @Environment(\.tabStackRenderingMode)
     private var renderingMode
 
+    @Environment(TabStackStore.self)
+    private var tabStackStore
+
     var body: some View {
         let opacity = store.resolvedOpacity
         let frame = store.resolvedPlacement.frame
         let hasTransition = store.transitionBehavior != nil
+
+        let transitionValuesStore = scopeToTransitionValuesStore(store: tabStackStore, state: \.allTransitionValues[ViewRef.page(store.id)])
 
         Group {
             switch renderingMode {
@@ -72,6 +77,7 @@ struct PageHostingView: View {
         }
         .opacity(opacity)
         .environment(store)
+        .environment(transitionValuesStore)
         .ignoresSafeArea(.all)
         .allowsHitTesting(!hasTransition)
     }

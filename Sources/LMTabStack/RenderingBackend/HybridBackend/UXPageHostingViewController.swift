@@ -8,6 +8,9 @@ struct PageHostingRoot: View {
     @Environment(PageStore.self)
     private var store
 
+    @TransitionValueReader(\.blurRadius)
+    private var blurRadius
+
     var body: some View {
         let placement = store.resolvedPlacement
         let transitionToken = store.transition?.transitionToken
@@ -19,7 +22,7 @@ struct PageHostingRoot: View {
                 summary.pageAnchor = pageAnchor
             }
             .frame(width: placement.frame.width, height: placement.frame.height)
-            .blur(radius: store.transition?.transitionValues.blurRadius ?? 0)
+            .blur(radius: blurRadius ?? 0)
             .ignoresSafeArea(.all)
     }
 }

@@ -36,11 +36,14 @@ private struct TransitionElementModifier: ViewModifier {
     @Environment(PageStore.self)
     private var store
 
+    @Environment(TabStackStore.self)
+    private var tabStackStore
+
     @Environment(\.tabStackRenderingMode)
     private var renderingMode
 
     func body(content: Content) -> some View {
-        let childStore = scopeToTransitionValuesStore(store: store, state: \.transition?.transitionElements[id: id]?.values)
+        let childStore = scopeToTransitionValuesStore(store: tabStackStore, state: \.allTransitionValues[ViewRef.transitionElement(.init(pageID: store.id, elementID: id))])
 
         Color.clear
             .overlay {

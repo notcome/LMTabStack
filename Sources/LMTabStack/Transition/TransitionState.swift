@@ -93,6 +93,7 @@ public enum TransitionProgress: Equatable, Sendable {
     case end
 }
 
+@ObservableState
 struct TransitionResolvedState: Equatable {
     enum Transition: Equatable {
         case interactive(AnyInteractiveTransition)
@@ -140,6 +141,8 @@ struct TransitionResolvedState: Equatable {
 
     var committedTransitionToken: Int?
     var waitingTarget: TransitionWaitingTarget?
+
+    var allTransitionValues: [ViewRef: TransitionValues] = [:]
 
     var progress: TransitionProgress {
         switch transition {

@@ -19,12 +19,19 @@ struct TabStackFeature {
         var transitionStage: TransitionStage?
         @ObservationStateIgnored
         var pendingUpdate: GeneratedPages?
+
+        var allTransitionValues: [ViewRef: TransitionValues] {
+            guard case .resolved(let state) = transitionStage else { return [:] }
+            return state.allTransitionValues
+        }
     }
 
     enum Action {
         case pages(IdentifiedActionOf<PageFeature>)
         case update(IdentifiedArrayOf<GeneratedPage>, TransitionResolver?)
         case updateInteractiveTransition((inout AnyInteractiveTransition) -> Void)
+
+        case updateAllTransitionValues([ViewRef: TransitionValues])
 
         case transitionDidCommit(token: Int, animationDuration: TimeInterval?)
         case transitionDidComplete
@@ -60,6 +67,15 @@ struct TabStackFeature {
             guard !behaviors.isEmpty else { break }
             state.transitionStage = .unresolved(.init(target: newPages, resolver: resolver))
             state.resolveTransition()
+
+        case .updateAllTransitionValues(let dict):
+            guard state.resolvedTransition != nil else {
+                assertionFailure()
+                break
+            }
+            for (ref, values) in dict {
+                state.resolvedTransition.allTransitionValues[ref, default: .init()].merge(values)
+            }
 
         case .updateInteractiveTransition(let modify):
             switch state.resolvedTransition.transition {

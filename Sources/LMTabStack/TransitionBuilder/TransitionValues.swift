@@ -11,6 +11,9 @@ public struct TransitionValues: Equatable, Sendable, CustomStringConvertible {
     @ObservationStateIgnored
     var dict: [ObjectIdentifier: AnySendableEquatable] = [:]
 
+    // An easy trick make it observable.
+    private(set) var isEmpty: Bool = false
+
     public var description: String {
         dict.description
     }
@@ -24,6 +27,7 @@ public struct TransitionValues: Equatable, Sendable, CustomStringConvertible {
             _$observationRegistrar.mutate(self, keyPath: \.[key], &dict[key], newValue) {
                 $0 == $1
             }
+            isEmpty = dict.isEmpty
         }
     }
 
@@ -41,10 +45,6 @@ public struct TransitionValues: Equatable, Sendable, CustomStringConvertible {
         for (key, value) in other.dict {
             self[key] = value
         }
-    }
-
-    var isEmpty: Bool {
-        dict.isEmpty
     }
 }
 

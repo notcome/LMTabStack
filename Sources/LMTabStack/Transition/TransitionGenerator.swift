@@ -29,17 +29,8 @@ private struct Projection: Equatable {
 
     @MainActor
     func update(to store: TabStackStore, sections: SectionCollection) {
-        func send(id: AnyPageID, action: PageTransitionFeature.Action, transaction: Transaction? = nil) {
-            let action: TabStackFeature.Action = .pages(.element(id: id, action: .transition(.presented(action))))
-            if let transaction {
-                store.send(action, transaction: transaction)
-            } else {
-                store.send(action)
-            }
-        }
-
         guard transition.isComplete else {
-            var updates: [AnyPageID: PageTransitionUpdate] = [:]
+            var updates: [ViewRef: TransitionValues] = [:]
             for section in sections {
                 for subview in section.content {
                     guard let ref = subview.containerValues.viewRef else { continue }
@@ -50,59 +41,38 @@ private struct Projection: Equatable {
                         .reduce(into: .init()) {
                             $0.merge($1.1)
                         }
-                    updates[ref.pageID, default: .init()].process(ref: ref, values: values)
+                    updates[ref, default: .init()].merge(values)
                 }
             }
 
             var transaction = Transaction()
             transaction.tracksVelocity = transition.isInteractive
 
-            for (id, update) in updates {
-                send(id: id, action: .update(update), transaction: transaction)
-            }
-
+            store.send(.updateAllTransitionValues(updates), transaction: transaction)
             store.send(.transitionDidCommit(token: transition.token, animationDuration: nil))
             return
         }
 
-        var updates: [TransitionAnimation: [AnyPageID: PageTransitionUpdate]] = [:]
+        var updatesByTiming: [TransitionAnimation: [ViewRef: TransitionValues]] = [:]
 
         for section in sections {
             for subview in section.content {
                 guard let ref = subview.containerValues.viewRef else { continue }
 
                 for (timing, values) in subview.containerValues.transitionValuesBuilder.nonemptyValues {
-                    updates[timing, default: [:]][ref.pageID, default: .init()].process(ref: ref, values: values)
+                    updatesByTiming[timing, default: [:]][ref, default: .init()].merge(values)
                 }
             }
         }
-        for (timing, updatesByPage) in updates {
+        for (timing, updates) in updatesByTiming {
             var transaction = Transaction(animation: timing.createSwiftUIAnimation())
             transaction.transitionAnimation = timing
-
-            for (id, update) in updatesByPage {
-                send(id: id, action: .update(update), transaction: transaction)
-            }
+            store.send(.updateAllTransitionValues(updates), transaction: transaction)
         }
 
-        let animationDuration: TimeInterval = updates.keys.reduce(into: 0) {
+        let animationDuration: TimeInterval = updatesByTiming.keys.reduce(into: 0) {
             $0 = max($0, $1.animation.duration)
         }
         store.send(.transitionDidCommit(token: transition.token, animationDuration: animationDuration))
     }
-}
-
-private extension PageTransitionUpdate {
-    mutating func process(ref: ViewRef, values: TransitionValues) {
-        switch ref {
-        case .page:
-            transitionValues?.merge(values)
-            if transitionValues == nil {
-                transitionValues = values
-            }
-        case .transitionElement(let id):
-            transitionElementValues[id.elementID, default: .init()].merge(values)
-        }
-    }
-
 }

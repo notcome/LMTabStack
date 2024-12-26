@@ -4,7 +4,7 @@ import SwiftUI
 typealias TransitionValuesStore = Store<TransitionValues, Never>
 
 @MainActor
-private let globalDummy: TransitionValuesStore = Store(initialState: .init()) {
+private let emptyTransitionValuesStore: TransitionValuesStore = Store(initialState: .init()) {
     EmptyReducer()
 }
 
@@ -16,7 +16,7 @@ func scopeToTransitionValuesStore<S: ObservableState>(
     if let childStore = store.scope(state: state, action: \.never) as TransitionValuesStore? {
         return childStore
     }
-    return globalDummy
+    return emptyTransitionValuesStore
 }
 
 @MainActor
@@ -32,6 +32,7 @@ public struct TransitionValueReader<Value>: DynamicProperty {
     }
 
     public init(_ keyPath: KeyPath<TransitionValues, Value>) {
+        assert(keyPath !== \TransitionValues.self)
         self.keyPath = keyPath
     }
 }
