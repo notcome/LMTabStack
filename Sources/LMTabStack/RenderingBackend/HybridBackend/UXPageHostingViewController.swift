@@ -5,17 +5,18 @@ import UIKit
 struct PageHostingRoot: View {
     var content: AnyView
 
-    @Environment(PageStore.self)
-    private var store
+    @Environment(\.pageCoordinator)
+    private var coordinator
 
-    @TransitionValueReader(\.blurRadius)
+    @TransitionValue(\.blurRadius)
     private var blurRadius
 
     var body: some View {
-        let placement = store.resolvedPlacement
-        let transitionToken = store.transition?.transitionToken
+        let placement = coordinator!.placement
+        let transitionToken = coordinator!.committedTransitionToken
+
         content
-            .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
+            .environment(\.pageVisiblity, coordinator!.hidden ? .invisible : .visible)
             .safeAreaPadding(placement.safeAreaInsets)
             .transformAnchorPreference(key: TransitionElementSummary.self, value: .bounds) { summary, pageAnchor in
                 summary.transitionToken = transitionToken

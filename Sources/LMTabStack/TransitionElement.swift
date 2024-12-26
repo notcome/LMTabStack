@@ -36,14 +36,14 @@ private struct TransitionElementModifier: ViewModifier {
     @Environment(PageStore.self)
     private var store
 
-    @Environment(TabStackStore.self)
-    private var tabStackStore
+    @Environment(\.tabStackCoordinator)
+    private var tabStackCoordinator
 
     @Environment(\.tabStackRenderingMode)
     private var renderingMode
 
     func body(content: Content) -> some View {
-        let childStore = scopeToTransitionValuesStore(store: tabStackStore, state: \.allTransitionValues[ViewRef.transitionElement(.init(pageID: store.id, elementID: id))])
+        let viewRef = ViewRef.transitionElement(.init(pageID: store.id, elementID: id))
 
         Color.clear
             .overlay {
@@ -54,11 +54,10 @@ private struct TransitionElementModifier: ViewModifier {
                 case .hybrid:
                     TransitionElementHybridBackend(
                         id: id,
-                        content: AnyView(content),
-                        transitionValues: childStore.state)
+                        content: AnyView(content))
                 }
             }
-            .environment(childStore)
+            .environment(\.viewTransitionModel, tabStackCoordinator!.viewTransitionModel(for: viewRef))
             .anchorPreference(key: TransitionElementSummary.self, value: .bounds) { anchor in
                 var summary = TransitionElementSummary()
                 summary.elements[id] = anchor
@@ -72,21 +71,21 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
         var id: AnyTransitionElementID
         var content: AnyView
 
-        @Environment(TransitionValuesStore.self)
-        private var store
-
+        @TransitionValue(\.blurRadius)
+        private var blurRadius
 
         var body: some View {
-            let blurRadius = store.blurRadius ?? 0
             content
-                .blur(radius: blurRadius)
+                .blur(radius: blurRadius ?? 0)
                 .ignoresSafeArea()
         }
     }
 
     var id: AnyTransitionElementID
     var content: AnyView
-    var transitionValues: TransitionValues?
+
+    @Environment(\.viewTransitionModel)
+    private var viewTransitionModel
 
     func makeUIView(context: Context) -> UXAnimationView {
         let wrapper = Wrapper(id: id, content: content)
@@ -113,8 +112,8 @@ private struct TransitionElementHybridBackend: UIViewRepresentable {
             hostingView.rootView.content = content
         }
 
-        if let transitionValues {
-            view.apply(values: transitionValues, transaction: context.transaction)
+        if viewTransitionModel.transitionInProgress {
+            view.apply(values: viewTransitionModel.access(\.self), transaction: context.transaction)
         } else {
             view.resetAllAnimations()
         }

@@ -3,22 +3,23 @@ import SwiftUI
 struct PageHostingViewPureBackend: View {
     var content: AnyView
 
-    @Environment(PageStore.self)
-    private var store
+    @Environment(\.pageCoordinator)
+    private var coordinator
 
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                let transitionToken = store.transition?.transitionToken
+                let placement = coordinator!.placement
+                let transitionToken = coordinator!.committedTransitionToken
 
                 content
-                    .safeAreaPadding(store.resolvedPlacement.safeAreaInsets)
+                    .safeAreaPadding(placement.safeAreaInsets)
                     .frame(width: proxy.size.width, height: proxy.size.height)
                     .transformAnchorPreference(key: TransitionElementSummary.self, value: .bounds) { summary, pageAnchor in
                         summary.transitionToken = transitionToken
                         summary.pageAnchor = pageAnchor
                     }
-                    .environment(\.pageVisiblity, store.hidden ? .invisible : .visible)
+                    .environment(\.pageVisiblity, coordinator!.hidden ? .invisible : .visible)
 //                    .modifier(store.transition?.contentEffects ?? .init())
                     .zIndex(0)
             }

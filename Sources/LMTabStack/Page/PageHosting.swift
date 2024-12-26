@@ -1,17 +1,35 @@
 import ComposableArchitecture
 import SwiftUI
 
-extension ContainerValues {
+protocol TabStackCoordinator {
+    func pageCoordinator(for pageID: AnyPageID) -> (any PageCoordinator)?
+    func viewTransitionModel(for viewRef: ViewRef) -> any ViewTransitionModel
+}
+
+protocol PageCoordinator {
+    var id: AnyPageID { get }
+
+    var placement: PagePlacement { get }
+    var hidden: Bool { get }
+
+    var committedTransitionToken: Int? { get }
+
+    func update(mountedLayout: PageMountedLayout)
+}
+
+extension EnvironmentValues {
     @Entry
-    var pageContent: AnyView?
+    var tabStackCoordinator: (any TabStackCoordinator)? = nil
+    @Entry
+    var pageCoordinator: (any PageCoordinator)? = nil
 }
 
 public struct Page<ID: Hashable & Sendable, Content: View>: View {
     var id: ID
     var content: Content
 
-    @Environment(TabStackStore.self)
-    private var store
+    @Environment(\.tabStackCoordinator)
+    private var tabStackCoordinator
 
     public init(
         id: ID,
@@ -24,13 +42,12 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
     public var body: some View {
         let id = AnyPageID(id)
         GeometryReader { _ in
-            let childStore = store.scope(state: \.pages[id: id], action: \.pages[id: id]) as PageStore?
-            if let childStore {
+            if let coordinator = tabStackCoordinator!.pageCoordinator(for: id) {
                 PageHostingView(
-                    store: childStore,
+                    coordinator: coordinator,
                     content: AnyView(content)
                 )
-                .environment(childStore)
+                .environment(\.pageCoordinator, coordinator)
             }
         }
         .tag(id)
@@ -39,21 +56,17 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
 }
 
 struct PageHostingView: View {
-    var store: PageStore
+    var coordinator: PageCoordinator
     var content: AnyView
 
     @Environment(\.tabStackRenderingMode)
     private var renderingMode
 
-    @Environment(TabStackStore.self)
-    private var tabStackStore
+    @Environment(\.tabStackCoordinator)
+    private var tabStackCoordinator
 
     var body: some View {
-        let opacity = store.resolvedOpacity
-        let frame = store.resolvedPlacement.frame
-        let hasTransition = store.transitionBehavior != nil
-
-        let transitionValuesStore = scopeToTransitionValuesStore(store: tabStackStore, state: \.allTransitionValues[ViewRef.page(store.id)])
+        let frame = coordinator.placement.frame
 
         Group {
             switch renderingMode {
@@ -70,16 +83,15 @@ struct PageHostingView: View {
                 if let mountedLayout = convertToMountedLayout(summary: summary, proxy: proxy) {
                     Color.clear
                         .onChange(of: mountedLayout, initial: true) {
-                            store.send(.syncMountedLayout(mountedLayout))
+                            coordinator.update(mountedLayout: mountedLayout)
                         }
                 }
             }
         }
-        .opacity(opacity)
-        .environment(store)
-        .environment(transitionValuesStore)
+        .opacity(coordinator.hidden ? 0 : 1)
+        .environment(\.viewTransitionModel, tabStackCoordinator!.viewTransitionModel(for: .page(coordinator.id)))
         .ignoresSafeArea(.all)
-        .allowsHitTesting(!hasTransition)
+        .allowsHitTesting(coordinator.committedTransitionToken != nil)
     }
 
     func convertToMountedLayout(summary: TransitionElementSummary, proxy: GeometryProxy) -> PageMountedLayout? {

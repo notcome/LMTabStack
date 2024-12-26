@@ -1,38 +1,58 @@
 import ComposableArchitecture
 import SwiftUI
 
-typealias TransitionValuesStore = Store<TransitionValues, Never>
-
-@MainActor
-private let emptyTransitionValuesStore: TransitionValuesStore = Store(initialState: .init()) {
-    EmptyReducer()
+protocol ViewTransitionModel {
+    var transitionInProgress: Bool { get }
+    func access<T>(_ keyPath: KeyPath<TransitionValues, T>) -> T
 }
 
-@MainActor
-func scopeToTransitionValuesStore<S: ObservableState>(
-    store: Store<S, some CasePathable>,
-    state: KeyPath<S, TransitionValues?>
-) -> TransitionValuesStore {
-    if let childStore = store.scope(state: state, action: \.never) as TransitionValuesStore? {
-        return childStore
+struct EmptyViewTransitionModel: ViewTransitionModel {
+    var transitionInProgress: Bool { false }
+
+    func access<T>(_ keyPath: KeyPath<TransitionValues, T>) -> T {
+        TransitionValues()[keyPath: keyPath]
     }
-    return emptyTransitionValuesStore
+}
+
+extension EnvironmentValues {
+    @Entry
+    var viewTransitionModel: any ViewTransitionModel = EmptyViewTransitionModel()
 }
 
 @MainActor
 @propertyWrapper
-public struct TransitionValueReader<Value>: DynamicProperty {
-    @Environment(TransitionValuesStore.self)
-    private var store
+public struct TransitionValue<Value>: DynamicProperty {
+    @Environment(\.viewTransitionModel.self)
+    private var model
 
     private var keyPath: KeyPath<TransitionValues, Value>
 
-    public var wrappedValue: Value {
-        store.state[keyPath: keyPath]
+    public init(_ keyPath: KeyPath<TransitionValues, Value>) {
+        self.keyPath = keyPath
     }
 
-    public init(_ keyPath: KeyPath<TransitionValues, Value>) {
-        assert(keyPath !== \TransitionValues.self)
-        self.keyPath = keyPath
+    public var wrappedValue: Value {
+        model.access(keyPath)
+    }
+
+    public struct TransitionMetadata {
+        public var transitionInProgress: Bool
+    }
+
+    public var projectedValue: TransitionMetadata {
+        .init(transitionInProgress: model.transitionInProgress)
+    }
+}
+
+@MainActor
+@propertyWrapper
+public struct TransitionInProgress: DynamicProperty {
+    @Environment(\.viewTransitionModel.self)
+    private var model
+
+    public init() {}
+
+    public var wrappedValue: Bool {
+        model.transitionInProgress
     }
 }

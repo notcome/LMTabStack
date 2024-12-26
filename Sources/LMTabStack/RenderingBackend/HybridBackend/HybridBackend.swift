@@ -3,11 +3,8 @@ import SwiftUI
 struct PageHostingViewHybridBackend {
     var content: AnyView
 
-    @Environment(PageStore.self)
-    private var store
-
-    @Environment(TransitionValuesStore.self)
-    private var transitionValues
+    @Environment(\.viewTransitionModel)
+    private var viewTransitionModel
 }
 
 extension PageHostingViewHybridBackend: UIViewControllerRepresentable {
@@ -20,8 +17,8 @@ extension PageHostingViewHybridBackend: UIViewControllerRepresentable {
             vc.hostingController.rootView.content = content
         }
 
-        if !transitionValues.isEmpty {
-            vc.wrapperView.apply(values: transitionValues.state, transaction: context.transaction)
+        if viewTransitionModel.transitionInProgress {
+            vc.wrapperView.apply(values: viewTransitionModel.access(\.self), transaction: context.transaction)
         } else {
             vc.wrapperView.resetAllAnimations()
         }
