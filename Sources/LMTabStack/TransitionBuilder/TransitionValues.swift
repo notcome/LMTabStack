@@ -48,7 +48,34 @@ public struct TransitionValues: Equatable, Sendable, CustomStringConvertible {
     }
 }
 
-// MARK: - Common Transition Values
+// MARK: - Common Transition Properties
+
+struct CommonTransitionProperties {
+    var opacity: Double?
+    var offsetX: Double?
+    var offsetY: Double?
+    var scaleX: Double?
+    var scaleY: Double?
+
+    var offset: CGSize {
+        .init(width: offsetX ?? 0, height: offsetY ?? 0)
+    }
+
+    var scale: CGSize {
+        .init(width: scaleX ?? 1, height: scaleY ?? 1)
+    }
+}
+
+extension TransitionValues {
+    var commonTransitionProperties: CommonTransitionProperties {
+        .init(
+            opacity: opacity,
+            offsetX: offsetX,
+            offsetY: offsetY,
+            scaleX: scaleX,
+            scaleY: scaleY)
+    }
+}
 
 private enum ScaleXKey: TransitionKey {
     static var defaultValue: Double? { nil }

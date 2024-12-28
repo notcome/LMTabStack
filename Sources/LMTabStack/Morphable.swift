@@ -1,55 +1,35 @@
 import ComposableArchitecture
 import SwiftUI
 
-struct CommonTransitionProperties {
-    var opacity: Double?
-    var offsetX: Double?
-    var offsetY: Double?
-    var scaleX: Double?
-    var scaleY: Double?
-
-    var offset: CGSize {
-        .init(width: offsetX ?? 0, height: offsetY ?? 0)
-    }
-
-    var scale: CGSize {
-        .init(width: scaleX ?? 0, height: scaleY ?? 0)
-    }
-}
-
-extension TransitionValues {
-    var commonTransitionProperties: CommonTransitionProperties {
-        .init(
-            opacity: opacity,
-            offsetX: offsetX,
-            offsetY: offsetY,
-            scaleX: scaleX,
-            scaleY: scaleY)
-    }
-}
-
-struct MorphableCTPModifier: ViewModifier {
+struct MorphableModifier: ViewModifier {
     @Environment(\.tabStackRenderingMode)
     private var renderingMode
 
-    @TransitionValue(\.commonTransitionProperties)
-    private var props
+    @Environment(\.viewTransitionModel)
+    private var model
 
     func body(content: Content) -> some View {
+        let blurRadius = model.access(\.blurRadius)
+        let inner = content
+            .blur(radius: blurRadius ?? 0)
+
+        let props = model.transitionInProgress ? model.access(\.commonTransitionProperties) : nil
+
         switch renderingMode {
         case .pure:
-            content.modifier(Pure(props: props))
+            inner.modifier(PureCTP(props: props))
         case .hybrid:
-            content.modifier(Hybrid(props: props))
+            inner.modifier(HybridCTP(props: props))
         }
     }
 }
 
-extension MorphableCTPModifier {
-    struct Pure: ViewModifier {
-        var props: CommonTransitionProperties
+extension MorphableModifier {
+    struct PureCTP: ViewModifier {
+        var props: CommonTransitionProperties?
 
         func body(content: Content) -> some View {
+            let props = self.props ?? .init()
             content
                 .geometryGroup()
                 .modifier(_ScaleEffect(scale: props.scale).ignoredByLayout())
@@ -59,44 +39,12 @@ extension MorphableCTPModifier {
     }
 }
 
-@MainActor
-struct PlatformAnimatableView<Content: View> {
-    var props: CommonTransitionProperties
-    var content: Content
-}
-
-extension PlatformAnimatableView: UIViewRepresentable {
-    func makeUIView(context: Context) -> UXAnimationView {
-        let hostingView = _UIHostingView(rootView: AnyView(content))
-        hostingView.backgroundColor = .clear
-
-        let view = UXAnimationView()
-        view.addSubview(hostingView)
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            hostingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            hostingView.topAnchor.constraint(equalTo: view.topAnchor),
-            hostingView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
-
-        return view
-    }
-
-    func updateUIView(_ view: UXAnimationView, context: Context) {
-        let hostingView = view.subviews[0] as! _UIHostingView<AnyView>
-        withTransaction(context.transaction) {
-            hostingView.rootView = AnyView(content)
-        }
-    }
-}
-
-extension MorphableCTPModifier {
-    struct Hybrid: ViewModifier {
-        var props: CommonTransitionProperties
+extension MorphableModifier {
+    struct HybridCTP: ViewModifier {
+        var props: CommonTransitionProperties?
 
         func body(content: Content) -> some View {
-            PlatformAnimatableView(props: props, content: content)
+            CTPAnimationViewRepresentable(props: props, content: content)
         }
     }
 }

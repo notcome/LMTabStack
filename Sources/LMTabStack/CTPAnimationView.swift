@@ -282,6 +282,7 @@ struct CTPAnimationViewRepresentable<Content: View>: UIViewRepresentable {
         withTransaction(context.transaction) {
             view.contentView.rootView = content
         }
+        view.contentView.layoutIfNeeded()
         view.apply(props, transaction: context.transaction)
     }
 
@@ -294,7 +295,9 @@ struct CTPAnimationViewRepresentable<Content: View>: UIViewRepresentable {
         if proposal.height == nil {
             size.height = hostingView.intrinsicContentSize.height
         }
-        return size
+        // In a VStack, Text might get clamped due to interactions among siblings.
+        // While not perfect, this works.
+        return .init(width: ceil(size.width), height: ceil(size.height))
     }
 }
 #endif
@@ -316,6 +319,7 @@ extension CTPAnimationViewControllerRepresentable: NSViewControllerRepresentable
         withTransaction(context.transaction) {
             viewController.contentViewController.rootView = content
         }
+        viewController.contentViewController.view.layoutSubtreeIfNeeded()
         viewController.apply(props, transaction: context.transaction)
     }
 }
@@ -333,6 +337,7 @@ extension CTPAnimationViewControllerRepresentable: UIViewControllerRepresentable
         withTransaction(context.transaction) {
             viewController.contentViewController.rootView = content
         }
+        viewController.contentViewController.view.layoutIfNeeded()
         viewController.apply(props, transaction: context.transaction)
     }
 }

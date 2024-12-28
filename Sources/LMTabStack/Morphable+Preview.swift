@@ -2,95 +2,152 @@ import ComposableArchitecture
 import SwiftUI
 
 @Reducer
-struct TestFeature {
+private struct BasicFeature {
     @ObservableState
-    struct State {
-        var values: TransitionValues = .init()
+    struct State: Equatable {
+        var first = TransitionValues()
+        var second = TransitionValues()
+        var third = TransitionValues()
+        var animationInProgress: Bool = false
     }
 
-    enum Action: BindableAction {
-        case binding(BindingAction<State>)
+    enum Action {
+        case startAnimation
+        case moveToStart
+        case moveToEnd
+        case endAnimation
     }
 
-    var body: some Reducer<State, Action> {
-        BindingReducer()
+    func reduce(into state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .startAnimation:
+            guard !state.animationInProgress else { break }
+            state.animationInProgress = true
+
+            return .run { send in
+                do {
+                    await send(.moveToStart)
+//                    try await Task.sleep(for: .milliseconds(10))
+
+                    var transaction = Transaction()
+                    transaction.transitionAnimation = .easeIn(duration: 1)
+                    transaction.animation = transaction.transitionAnimation!.createSwiftUIAnimation()
+                    let t = transaction.transitionAnimation!.animation.duration
+                    await send(.moveToEnd, transaction: transaction)
+                    try await Task.sleep(for: .milliseconds(round((t + 0.1) * 1000)))
+                    await send(.endAnimation)
+                } catch {
+                    print("Unexpected error", error)
+                    await send(.endAnimation)
+                }
+            }
+
+        case .moveToStart:
+            guard state.animationInProgress else { break }
+            state.first.blurRadius = 0
+            state.first.opacity = 1
+
+            state.second.blurRadius = 0
+            state.second.scaleX = 1
+            state.second.scaleY = 1
+
+            state.third.blurRadius = 0
+            state.third.offsetY = 0
+
+        case .moveToEnd:
+            guard state.animationInProgress else { break }
+
+            state.first.blurRadius = 10
+            state.first.opacity = 0
+
+            state.second.blurRadius = 10
+            state.second.scaleX = 1e-3
+            state.second.scaleY = 1e-3
+
+            state.third.blurRadius = 10
+            state.third.offsetY = 300
+
+        case .endAnimation:
+            state = .init()
+        }
+        return .none
     }
 }
 
-private struct Wrapper {
-    var store: StoreOf<TestFeature>
-}
+private struct ViewTransitionModelAdapter: ViewTransitionModel {
+    var rootStore: StoreOf<BasicFeature>
+    var childStore: Store<TransitionValues, Never>
 
-extension Wrapper: ViewTransitionModel {
+    init(rootStore: StoreOf<BasicFeature>, keyPath: KeyPath<BasicFeature.State, TransitionValues>) {
+        self.rootStore = rootStore
+        childStore = rootStore.scope(state: keyPath, action: \.never)
+    }
+
     var transitionInProgress: Bool {
-        true
+        rootStore.animationInProgress
     }
 
     func access<T>(_ keyPath: KeyPath<TransitionValues, T>) -> T {
-        store.state.values[keyPath: keyPath]
+        childStore.state[keyPath: keyPath]
     }
 }
 
-struct Editor: View {
-    @Bindable
-    var store: StoreOf<TestFeature>
+private struct BasicElementsStack: View {
+    var store: StoreOf<BasicFeature>
+
+    @Environment(\.tabStackRenderingMode)
+    private var renderingMode
 
     var body: some View {
-        HStack {
-            Button("Offset") {
-                withAnimation {
-                    if store.values.offsetY == nil {
-                        store.values.offsetY = 100
-                    } else {
-                        store.values.offsetY = nil
-                    }
-                }
-            }
-        }
-    }
-}
+        VStack(spacing: 20) {
+            Text(renderingMode == .pure ? "Pure" : "Hybrid")
 
-struct TestView: View {
-    @State
-    var hello = Store(initialState: TestFeature.State()) {
-        TestFeature()
-    }
-
-    @State
-    var frame: CGRect? = nil
-
-    var body: some View {
-        VStack {
-            Text("Hello, world!")
+            Text("First")
                 .padding()
-                .background(.blue, ignoresSafeAreaEdges: [])
-                .modifier(MorphableCTPModifier())
-                .background {
-                    GeometryReader { proxy in
-                        let frame = proxy.frame(in: .global)
-                        Color.clear
-                            .onChange(of: frame, initial: true) {
-                                self.frame = frame
-                            }
-                    }
-                }
-                .environment(\.viewTransitionModel, Wrapper(store: hello))
+                .background(Color.pink)
+                .modifier(MorphableModifier())
+                .environment(\.viewTransitionModel, ViewTransitionModelAdapter(rootStore: store, keyPath: \.first))
 
-            Spacer()
+            Text("Second")
+                .padding()
+                .background(Color.blue)
+                .modifier(MorphableModifier())
+                .environment(\.viewTransitionModel, ViewTransitionModelAdapter(rootStore: store, keyPath: \.second))
 
-            if let frame {
-                Text(CGRectIntegral(frame).debugDescription)
-            }
-
-            Spacer()
-
-            Editor(store: hello)
+            Text("Third")
+                .padding()
+                .background(Color.yellow)
+                .modifier(MorphableModifier())
+                .environment(\.viewTransitionModel, ViewTransitionModelAdapter(rootStore: store, keyPath: \.third))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.yellow)
+        .padding(.vertical, 20)
     }
 }
 
 #Preview {
-    TestView()
+    @Previewable @State var store = Store(initialState: .init()) {
+        BasicFeature()
+    }
+
+    VStack(spacing: 100) {
+        Form {
+            Section("Controls") {
+                Button("Trigger animation") {
+                    store.send(.startAnimation)
+                }.disabled(store.animationInProgress)
+            }
+
+            Section {
+                HStack {
+                    BasicElementsStack(store: store)
+                        .environment(\.tabStackRenderingMode, .hybrid)
+                    BasicElementsStack(store: store)
+                        .environment(\.tabStackRenderingMode, .pure)
+                }
+                .frame(maxWidth: .infinity)
+            } header: {
+                Text("Preview")
+            }
+        }
+    }
 }
