@@ -32,7 +32,7 @@ private enum OffsetDirection: CaseIterable, Identifiable {
 }
 
 @Reducer
-private struct PreviewFeature {
+private struct BasicFeature {
     @ObservableState
     struct State: Equatable {
         var opacity: Double = 1.0
@@ -113,15 +113,15 @@ private struct PreviewFeature {
 }
 
 @MainActor
-private func createPreviewFeature() -> StoreOf<PreviewFeature> {
+private func createBasicFeature() -> StoreOf<BasicFeature> {
     Store(initialState: .init()) {
-       PreviewFeature()
+       BasicFeature()
    }
 }
 
-private struct PreviewControls: View {
+private struct BasicControls: View {
     @Bindable
-    var store: StoreOf<PreviewFeature>
+    var store: StoreOf<BasicFeature>
 
     var body: some View {
         HStack {
@@ -138,19 +138,19 @@ private struct PreviewControls: View {
             }
         }
 
-        Button("Trigger Animation") {
+        Button("Trigger animation") {
             store.send(.startAnimation)
         }.disabled(store.animationInProgress)
     }
 }
 
-#Preview("View Basics") {
-    @Previewable @State var store = createPreviewFeature()
+#Preview("Basic View") {
+    @Previewable @State var store = createBasicFeature()
 
     VStack(spacing: 100) {
         Form {
             Section("Controls") {
-                PreviewControls(store: store)
+                BasicControls(store: store)
             }
 
             Section {
@@ -172,13 +172,13 @@ private struct PreviewControls: View {
     }
 }
 
-#Preview("View Controller Basics") {
-    @Previewable @State var store = createPreviewFeature()
+#Preview("Basic View Controller") {
+    @Previewable @State var store = createBasicFeature()
 
     VStack(spacing: 100) {
         Form {
             Section("Controls") {
-                PreviewControls(store: store)
+                BasicControls(store: store)
             }
 
             Section {
@@ -195,6 +195,104 @@ private struct PreviewControls: View {
                 Text("Preview")
             } footer: {
                 Text("Background of the view controller is shown in gray.")
+            }
+        }
+    }
+}
+
+@Reducer
+private struct VelocityTrackingFeature {
+    @ObservableState
+    struct State: Equatable {
+        var offsetX: Double?
+        var ctp: CommonTransitionProperties? {
+            guard let offsetX else { return nil }
+            return .init(offsetX: offsetX)
+        }
+        var animationInProgress: Bool = false
+    }
+
+    enum Action {
+        case startAnimation(Bool)
+        case updateOffsetX(Double)
+        case endAnimation
+    }
+
+    func reduce(into state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .startAnimation(let tracksVelocity):
+            guard !state.animationInProgress else { break }
+            state.animationInProgress = true
+
+            return .run { send in
+                do {
+                    for i in 0...15 {
+                        var transaction = Transaction()
+                        transaction.tracksVelocity = tracksVelocity
+                        await send(.updateOffsetX(Double(i * 10)), transaction: transaction)
+                        try await Task.sleep(for: .milliseconds(8))
+                    }
+
+                    var transaction = Transaction()
+                    transaction.transitionAnimation = .spring
+                    let t = transaction.transitionAnimation!.animation.duration
+                    await send(.updateOffsetX(0), transaction: transaction)
+                    try await Task.sleep(for: .milliseconds(round((t + 0.1) * 1000)))
+
+                    await send(.endAnimation)
+                } catch {
+                    print("Unexpected error", error)
+                    await send(.endAnimation)
+                }
+            }
+
+        case .updateOffsetX(let x):
+            guard state.animationInProgress else { break }
+            state.offsetX = x
+
+        case .endAnimation:
+            state = .init()
+        }
+        return .none
+    }
+}
+
+#Preview("Velocity Tracking") {
+    @Previewable @State var store = Store(initialState: .init()) {
+        VelocityTrackingFeature()
+    }
+
+    VStack(spacing: 100) {
+        Form {
+            Section("Controls") {
+                Button("With velocity tracking") {
+                    store.send(.startAnimation(true))
+                }.disabled(store.animationInProgress)
+
+                Button("Without velocity tracking") {
+                    store.send(.startAnimation(false))
+                }.disabled(store.animationInProgress)
+            }
+
+            Section {
+                CTPAnimationViewControllerRepresentable(
+                    props: store.ctp,
+                    content: RoundedRectangle(cornerRadius: 8)
+                        .fill(.blue)
+                        .frame(width: 100, height: 100)
+                )
+                .overlay {
+                    Rectangle()
+                        .frame(width: 1)
+                        .offset(x: 200)
+                }
+                .offset(x: -75)
+                .frame(height: 200)
+                .frame(maxWidth: .infinity)
+            } header: {
+                Text("Preview")
+            } footer: {
+                Text("Without velocity tracking, the blue square's right edge will align precisely with the black line before returning. When velocity tracking is enabled, momentum will carry it slightly past this alignment point before it springs back to its starting position.")
             }
         }
     }
