@@ -1,6 +1,7 @@
 import ComposableArchitecture
 import SwiftUI
 
+@MainActor
 protocol ViewTransitionModel {
     var transitionInProgress: Bool { get }
     func access<T>(_ keyPath: KeyPath<TransitionValues, T>) -> T

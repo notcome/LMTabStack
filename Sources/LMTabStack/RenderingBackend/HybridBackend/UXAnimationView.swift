@@ -1,33 +1,6 @@
 import SwiftUI
 import UIKit
 
-struct VelocityTracker {
-    private var samples: [(CFTimeInterval, Double)] = []
-
-    mutating func addSample(_ value: Double) {
-        let pair = (CACurrentMediaTime(), value)
-        switch samples.count {
-        case 2:
-            samples[0] = samples[1]
-            samples[1] = pair
-        case 0, 1:
-            samples.append(pair)
-        default:
-            fatalError()
-        }
-    }
-
-    var absoluteVelocity: Double {
-        switch samples.count {
-        case 2:
-            let (t1, x1) = samples[0]
-            let (t2, x2) = samples[1]
-            return (x2 - x1) / (t2 - t1)
-        default:
-            return 0
-        }
-    }
-}
 
 final class UXAnimationView: UIView {
     private(set) var keyPathStates: [String: KeyPathState] = [:]
