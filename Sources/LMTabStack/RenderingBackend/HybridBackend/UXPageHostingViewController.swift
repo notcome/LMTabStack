@@ -47,6 +47,7 @@ final class UXPageHostingViewController: UIViewController {
     init(rootView: PageHostingRoot) {
         hostingController = .init(rootView: rootView)
         hostingController.view.backgroundColor = .clear
+        hostingController.safeAreaRegions = []
         super.init(nibName: nil, bundle: nil)
     }
 

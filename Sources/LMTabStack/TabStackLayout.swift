@@ -22,6 +22,7 @@ extension View {
 public struct TabStackLayoutContext {
     public let bounds: CGRect
     public let safeAreaInsets: EdgeInsets
+    public let keyboardSafeAreaInsets: EdgeInsets
 }
 
 public struct PagePlacement: Equatable {
