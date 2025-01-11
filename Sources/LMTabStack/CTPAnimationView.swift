@@ -261,6 +261,8 @@ class CTPAnimationViewController<ContentViewController: PlatformViewController>:
     }
 }
 
+// MARK: Representables
+
 #if os(iOS) || targetEnvironment(macCatalyst)
 /// Wraps a SwiftUI view in a CTPAnimationView.
 ///
@@ -279,9 +281,7 @@ struct CTPAnimationViewRepresentable<Content: View>: UIViewRepresentable {
     }
     
     func updateUIView(_ view: CTPAnimationView<_UIHostingView<Content>>, context: Context) {
-        withTransaction(context.transaction) {
-            view.contentView.rootView = content
-        }
+        view.contentView.rootView = content
         view.contentView.layoutIfNeeded()
         view.apply(props, transaction: context.transaction)
     }
@@ -316,9 +316,7 @@ extension CTPAnimationViewControllerRepresentable: NSViewControllerRepresentable
     }
     
     func updateNSViewController(_ viewController: CTPAnimationViewController<NSHostingController<Content>>, context: Context) {
-        withTransaction(context.transaction) {
-            viewController.contentViewController.rootView = content
-        }
+        viewController.contentViewController.rootView = content
         viewController.contentViewController.view.layoutSubtreeIfNeeded()
         viewController.apply(props, transaction: context.transaction)
     }
@@ -334,9 +332,7 @@ extension CTPAnimationViewControllerRepresentable: UIViewControllerRepresentable
     }
     
     func updateUIViewController(_ viewController: CTPAnimationViewController<UIHostingController<Content>>, context: Context) {
-        withTransaction(context.transaction) {
-            viewController.contentViewController.rootView = content
-        }
+        viewController.contentViewController.rootView = content
         viewController.contentViewController.view.layoutIfNeeded()
         viewController.apply(props, transaction: context.transaction)
     }

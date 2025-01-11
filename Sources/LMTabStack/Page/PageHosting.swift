@@ -1,11 +1,13 @@
 import ComposableArchitecture
 import SwiftUI
 
+@MainActor
 protocol TabStackCoordinator {
     func pageCoordinator(for pageID: AnyPageID) -> (any PageCoordinator)?
     func viewTransitionModel(for viewRef: ViewRef) -> any ViewTransitionModel
 }
 
+@MainActor
 protocol PageCoordinator {
     var id: AnyPageID { get }
 
@@ -15,6 +17,9 @@ protocol PageCoordinator {
     var committedTransitionToken: Int? { get }
 
     func update(mountedLayout: PageMountedLayout)
+
+    var pageTransitionModel: any ViewTransitionModel { get }
+    func morphableTransitionModel(for morphableID: AnyMorphableID) -> (any ViewTransitionModel)?
 }
 
 extension EnvironmentValues {

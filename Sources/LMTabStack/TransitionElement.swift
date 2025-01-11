@@ -4,6 +4,7 @@ struct TransitionElementSummary: Equatable {
     var transitionToken: Int?
     var pageAnchor: Anchor<CGRect>?
     var elements: [AnyTransitionElementID: Anchor<CGRect>] = [:]
+    var morphables: [AnyMorphableID: Anchor<CGRect>] = [:]
 
     mutating func merge(_ other: TransitionElementSummary) {
         if let otherToken = other.transitionToken {
@@ -18,6 +19,9 @@ struct TransitionElementSummary: Equatable {
         }
         for (id, anchor) in other.elements {
             elements[id] = anchor
+        }
+        for (id, anchor) in other.morphables {
+            morphables[id] = anchor
         }
     }
 }

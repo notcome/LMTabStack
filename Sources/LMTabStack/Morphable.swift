@@ -1,50 +1,29 @@
-import ComposableArchitecture
 import SwiftUI
 
-struct MorphableModifier: ViewModifier {
-    @Environment(\.tabStackRenderingMode)
-    private var renderingMode
+private struct _Morphable: ViewModifier {
+    var id: AnyMorphableID
 
-    @Environment(\.viewTransitionModel)
-    private var model
+    @Environment(\.pageCoordinator)
+    private var pageCoordinator
 
     func body(content: Content) -> some View {
-        let blurRadius = model.access(\.blurRadius)
-        let inner = content
-            .blur(radius: blurRadius ?? 0)
+        content
+            .modifier(MorphableModifier())
+            .environment(\.viewTransitionModel, viewTransitionModel)
+            .anchorPreference(key: TransitionElementSummary.self, value: .bounds) { anchor in
+                var summary = TransitionElementSummary()
+                summary.morphables[id] = anchor
+                return summary
+            }
+    }
 
-        let props = model.transitionInProgress ? model.access(\.commonTransitionProperties) : nil
-
-        switch renderingMode {
-        case .pure:
-            inner.modifier(PureCTP(props: props))
-        case .hybrid:
-            inner.modifier(HybridCTP(props: props))
-        }
+    var viewTransitionModel: ViewTransitionModel {
+        pageCoordinator?.morphableTransitionModel(for: id) ?? EmptyViewTransitionModel()
     }
 }
 
-extension MorphableModifier {
-    struct PureCTP: ViewModifier {
-        var props: CommonTransitionProperties?
-
-        func body(content: Content) -> some View {
-            let props = self.props ?? .init()
-            content
-                .geometryGroup()
-                .modifier(_ScaleEffect(scale: props.scale).ignoredByLayout())
-                .modifier(_OffsetEffect(offset: props.offset).ignoredByLayout())
-                .opacity(props.opacity ?? 1)
-        }
-    }
-}
-
-extension MorphableModifier {
-    struct HybridCTP: ViewModifier {
-        var props: CommonTransitionProperties?
-
-        func body(content: Content) -> some View {
-            CTPAnimationViewRepresentable(props: props, content: content)
-        }
+extension View {
+    public func morphable<ID: Hashable & Sendable>(id: ID) -> some View {
+        modifier(_Morphable(id: AnyMorphableID(id)))
     }
 }

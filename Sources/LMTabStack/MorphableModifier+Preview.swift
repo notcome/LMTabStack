@@ -27,8 +27,6 @@ private struct BasicFeature {
             return .run { send in
                 do {
                     await send(.moveToStart)
-//                    try await Task.sleep(for: .milliseconds(10))
-
                     var transaction = Transaction()
                     transaction.transitionAnimation = .easeIn(duration: 1)
                     transaction.animation = transaction.transitionAnimation!.createSwiftUIAnimation()
