@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9A28D9C52D33A89100D6C882 /* MusicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 9A28D9C42D33A89100D6C882 /* MusicPlayer */; };
 		9AE9CB322CFB090C00B618E7 /* LMTabStack in Frameworks */ = {isa = PBXBuildFile; productRef = 9AE9CB312CFB090C00B618E7 /* LMTabStack */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9A28D9B52D33A87700D6C882 /* MusicPlayerApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MusicPlayerApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AE9CB132CFB08A800B618E7 /* Playground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Playground.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -25,6 +27,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		9A28D9B62D33A87700D6C882 /* MusicPlayerApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MusicPlayerApp;
+			sourceTree = "<group>";
+		};
 		9AE9CB152CFB08A800B618E7 /* Playground */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -36,6 +43,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		9A28D9B22D33A87700D6C882 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A28D9C52D33A89100D6C882 /* MusicPlayer in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9AE9CB102CFB08A800B618E7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -51,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				9AE9CB152CFB08A800B618E7 /* Playground */,
+				9A28D9B62D33A87700D6C882 /* MusicPlayerApp */,
 				9AE9CB302CFB090C00B618E7 /* Frameworks */,
 				9AE9CB142CFB08A800B618E7 /* Products */,
 			);
@@ -60,6 +76,7 @@
 			isa = PBXGroup;
 			children = (
 				9AE9CB132CFB08A800B618E7 /* Playground.app */,
+				9A28D9B52D33A87700D6C882 /* MusicPlayerApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +91,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		9A28D9B42D33A87700D6C882 /* MusicPlayerApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9A28D9C12D33A87800D6C882 /* Build configuration list for PBXNativeTarget "MusicPlayerApp" */;
+			buildPhases = (
+				9A28D9B12D33A87700D6C882 /* Sources */,
+				9A28D9B22D33A87700D6C882 /* Frameworks */,
+				9A28D9B32D33A87700D6C882 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9A28D9B62D33A87700D6C882 /* MusicPlayerApp */,
+			);
+			name = MusicPlayerApp;
+			packageProductDependencies = (
+				9A28D9C42D33A89100D6C882 /* MusicPlayer */,
+			);
+			productName = MusicPlayerApp;
+			productReference = 9A28D9B52D33A87700D6C882 /* MusicPlayerApp.app */;
+			productType = "com.apple.product-type.application";
+		};
 		9AE9CB122CFB08A800B618E7 /* Playground */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9AE9CB222CFB08A900B618E7 /* Build configuration list for PBXNativeTarget "Playground" */;
@@ -104,9 +144,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1610;
+				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1610;
 				TargetAttributes = {
+					9A28D9B42D33A87700D6C882 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					9AE9CB122CFB08A800B618E7 = {
 						CreatedOnToolsVersion = 16.1;
 					};
@@ -127,11 +170,19 @@
 			projectRoot = "";
 			targets = (
 				9AE9CB122CFB08A800B618E7 /* Playground */,
+				9A28D9B42D33A87700D6C882 /* MusicPlayerApp */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		9A28D9B32D33A87700D6C882 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9AE9CB112CFB08A800B618E7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -142,6 +193,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		9A28D9B12D33A87700D6C882 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9AE9CB0F2CFB08A800B618E7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -152,6 +210,84 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		9A28D9C22D33A87800D6C882 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MusicPlayerApp/MusicPlayerApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MusicPlayerApp/Preview Content\"";
+				DEVELOPMENT_TEAM = 97W7A3Y9GD;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ms.liu.examples.MusicPlayerApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Debug;
+		};
+		9A28D9C32D33A87800D6C882 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MusicPlayerApp/MusicPlayerApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MusicPlayerApp/Preview Content\"";
+				DEVELOPMENT_TEAM = 97W7A3Y9GD;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ms.liu.examples.MusicPlayerApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Release;
+		};
 		9AE9CB202CFB08A900B618E7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -339,6 +475,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		9A28D9C12D33A87800D6C882 /* Build configuration list for PBXNativeTarget "MusicPlayerApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A28D9C22D33A87800D6C882 /* Debug */,
+				9A28D9C32D33A87800D6C882 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		9AE9CB0E2CFB08A800B618E7 /* Build configuration list for PBXProject "Playground" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -360,6 +505,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		9A28D9C42D33A89100D6C882 /* MusicPlayer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MusicPlayer;
+		};
 		9AE9CB312CFB090C00B618E7 /* LMTabStack */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LMTabStack;

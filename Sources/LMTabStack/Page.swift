@@ -36,8 +36,8 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
     var id: ID
     var content: Content
 
-    @Environment(\.tabStackCoordinator)
-    private var tabStackCoordinator
+    @Environment(\.pageHost)
+    private var pageHost
 
     public init(
         id: ID,
@@ -49,14 +49,9 @@ public struct Page<ID: Hashable & Sendable, Content: View>: View {
 
     public var body: some View {
         let id = AnyPageID(id)
-        GeometryReader { _ in
-            if let coordinator = tabStackCoordinator!.pageCoordinator(for: id) {
-                content
-                    .modifier(_Page())
-                    .environment(\.pageCoordinator, coordinator)
-            }
+        GeometryReader { geometryProxy in
+            pageHost.eraseToView(page: AnyView(content), geometryProxy: geometryProxy)
         }
         .tag(id)
-        .id(id)
     }
 }

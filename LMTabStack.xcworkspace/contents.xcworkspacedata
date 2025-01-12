@@ -8,6 +8,9 @@
       location = "group:Examples">
    </FileRef>
    <FileRef
+      location = "group:Examples/Playground/Playground.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:LMTabStack.xctestplan">
    </FileRef>
 </Workspace>
