@@ -59,6 +59,10 @@ struct PageModifier: ViewModifier {
         let inner = content
             .safeAreaPadding(placement.safeAreaInsets)
             .frame(width: placement.frame.width, height: placement.frame.height)
+            .transformAnchorPreference(key: TransitionElementSummary.self, value: .bounds) { summary, pageAnchor in
+                summary.transitionToken = pageCoordinator!.committedTransitionToken
+                summary.pageAnchor = pageAnchor
+            }
             .blur(radius: blurRadius ?? 0)
 
         let ctp = model.transitionInProgress ? model.access(\.commonTransitionProperties) : nil
